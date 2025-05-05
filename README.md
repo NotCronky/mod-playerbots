@@ -15,6 +15,8 @@
     <img src="https://github.com/liyunfan1223/mod-playerbots/actions/workflows/windows_build.yml/badge.svg">
 </div>
 
+DONT USE - FOR LEARNING
+
 # Playerbots Module
 `mod-playerbots` is an [AzerothCore](https://www.azerothcore.org/) module that adds player-like bots to a server. The project is based off [IKE3's Playerbots](https://github.com/ike3/mangosbot). Features include:
 
