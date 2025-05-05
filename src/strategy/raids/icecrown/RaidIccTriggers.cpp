@@ -102,7 +102,14 @@ bool IccGunshipCannonNearTrigger::IsActive()
 {
     if (bot->GetVehicle())
         return false;
-    
+
+    Unit* mount1 = bot->FindNearestCreature(36838, 100.0f);
+
+    Unit* mount2 = bot->FindNearestCreature(36839, 100.0f);
+
+    if (!mount1 && !mount2)
+        return false;
+
     if (!botAI->IsDps(bot))
         return false;
     // Player* master = botAI->GetMaster();
@@ -117,16 +124,23 @@ bool IccGunshipCannonNearTrigger::IsActive()
 
 bool IccGunshipTeleportAllyTrigger::IsActive()
 {
-    Unit* boss = AI_VALUE2(Unit*, "find target", "kor'kron battle-mage");
-    if (!boss) { return false; }
+    Unit* boss = bot->FindNearestCreature(36939, 100.0f);
+    if (!boss)
+        return false;
+
+    if (!boss->IsHostileTo(bot))
+        return false;
 
     return true;
 }
 
 bool IccGunshipTeleportHordeTrigger::IsActive()
 {
-    Unit* boss = AI_VALUE2(Unit*, "find target", "skybreaker sorcerer");
+    Unit* boss = bot->FindNearestCreature(36948, 100.0f);
     if (!boss)
+        return false;
+
+    if (!boss->IsHostileTo(bot))
         return false;
 
     return true;
@@ -978,7 +992,25 @@ bool IccLichKingShadowTrapTrigger::IsActive()
     if (!boss)
         return false;
 
-    return true;
+    if (boss->HealthBelowPct(70))
+        return false;
+
+    // search for all nearby traps
+    GuidVector npcs = AI_VALUE(GuidVector, "nearest hostile npcs");
+    std::vector<Unit*> nearbyTraps;
+    bool needToMove = false;
+
+    for (auto& npc : npcs)
+    {
+        Unit* unit = botAI->GetUnit(npc);
+        if (!unit || !unit->IsAlive())
+            continue;
+
+        if (unit->GetEntry() == 39137)  // shadow trap
+            return true;
+    }
+
+    return false;
 }
 
 bool IccLichKingNecroticPlagueTrigger::IsActive()
@@ -1017,9 +1049,8 @@ bool IccLichKingWinterTrigger::IsActive()
 bool IccLichKingAddsTrigger::IsActive()
 {
     Unit* boss = AI_VALUE2(Unit*, "find target", "the lich king");
-    Unit* spiritWarden = AI_VALUE2(Unit*, "find target", "spirit warden");
 
-    if (!boss && !spiritWarden)  
+    if (!boss) 
         return false;
 
     return true;
