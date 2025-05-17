@@ -12,7 +12,7 @@
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
 
-bool LootRollAction::Execute(Event event)
+/* bool LootRollAction::Execute(Event event)
 {
     Player* bot = QueryItemUsageAction::botAI->GetBot();
 
@@ -150,10 +150,190 @@ bool LootRollAction::Execute(Event event)
     //     }
     // }
     return true;
+}*/
+
+bool LootRollAction::Execute(Event event)
+{
+    Player* bot = QueryItemUsageAction::botAI->GetBot();
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return false;
+
+    std::vector<Roll*> rolls = group->GetRolls();
+    for (Roll*& roll : rolls)
+    {
+        if (roll->playerVote.find(bot->GetGUID())->second != NOT_EMITED_YET)
+            continue;
+
+        ObjectGuid guid = roll->itemGUID;
+        uint32 slot = roll->itemSlot;
+        uint32 itemId = roll->itemid;
+
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemId);
+        if (!proto)
+            continue;
+
+        RollVote vote = CalculateRollVote(proto);  // Unified logic for all items
+
+        switch (group->GetLootMethod())
+        {
+            case MASTER_LOOT:
+            case FREE_FOR_ALL:
+                group->CountRollVote(bot->GetGUID(), guid, PASS);
+                break;
+            default:
+                group->CountRollVote(bot->GetGUID(), guid, vote);
+                break;
+        }
+    }
+
+    return true;
 }
 
+float LootRollAction::EvaluateItemScore(ItemTemplate const* proto)
+{
+    float score = 0.0f;
+    Player* bot = botAI->GetBot();
+    uint32 classId = bot->getClass();
 
-RollVote LootRollAction::CalculateRollVote(ItemTemplate const* proto)
+    std::map<uint32, float> statWeights;
+    if (botAI->IsHeal(bot))
+    {
+        statWeights[ITEM_MOD_INTELLECT] = 1.0f;
+        statWeights[ITEM_MOD_SPIRIT] = 0.8f;
+        statWeights[ITEM_MOD_SPELL_POWER] = 1.2f;
+        statWeights[ITEM_MOD_MANA_REGENERATION] = 0.9f;
+    }
+    else if (botAI->IsTank(bot))
+    {
+        statWeights[ITEM_MOD_STAMINA] = 1.5f;
+        statWeights[ITEM_MOD_DODGE_RATING] = 1.0f;
+        statWeights[ITEM_MOD_PARRY_RATING] = 1.0f;
+        statWeights[ITEM_MOD_DEFENSE_SKILL_RATING] = 1.2f;
+    }
+    else if (botAI->IsDps(bot))
+    {
+        if (classId == CLASS_ROGUE || classId == CLASS_HUNTER || classId == CLASS_DRUID || classId == CLASS_SHAMAN)
+            statWeights[ITEM_MOD_AGILITY] = 1.2f;
+        else if (classId == CLASS_WARRIOR || classId == CLASS_PALADIN || classId == CLASS_DEATH_KNIGHT)
+            statWeights[ITEM_MOD_STRENGTH] = 1.2f;
+        else if (classId == CLASS_MAGE || classId == CLASS_WARLOCK || classId == CLASS_PRIEST)
+            statWeights[ITEM_MOD_INTELLECT] = 1.0f;
+        statWeights[ITEM_MOD_CRIT_RATING] = 0.8f;
+        statWeights[ITEM_MOD_HASTE_RATING] = 0.7f;
+    }
+
+    for (uint32 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
+    {
+        if (proto->ItemStat[i].ItemStatType < MAX_ITEM_MOD && proto->ItemStat[i].ItemStatValue > 0)
+        {
+            score += statWeights[proto->ItemStat[i].ItemStatType] * proto->ItemStat[0].ItemStatValue;
+        }
+    }
+
+    if (bot->CanUseItem(proto) == EQUIP_ERR_OK)
+        score += 10.0f;
+
+    if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK && proto->Quality == ITEM_QUALITY_EPIC)
+    {
+        if (CanBotUseToken(proto, bot))
+            score += 50.0f;
+        else
+            score += 5.0f;
+    }
+
+    return score;
+}
+
+bool LootRollAction::IsItemUpgrade(ItemTemplate const* proto)
+{
+    Player* bot = botAI->GetBot();
+    uint32 slot = proto->InventoryType;
+    Item* currentItem = bot->GetUseableItemByPos(INVENTORY_SLOT_BAG_0, slot);
+
+    if (!currentItem)
+        return true;
+
+    ItemTemplate const* currentItemTemplate = currentItem->GetTemplate();
+    float newScore = EvaluateItemScore(proto);
+    float currentScore = EvaluateItemScore(currentItemTemplate);
+
+    float needThreshold = 1.1f;
+    return newScore > currentScore * needThreshold;
+}
+
+bool LootRollAction::ShouldNeedItem(ItemTemplate const* proto)
+{
+    if (!IsItemUpgrade(proto))
+        return false;
+
+    Player* bot = botAI->GetBot();
+    Group* group = bot->GetGroup();
+    if (!group)
+        return true;
+
+    float botScore = EvaluateItemScore(proto);
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+    {
+        Player* member = ref->GetSource();
+        if (member && member != bot)
+        {
+            PlayerbotAI* memberAI = GET_PLAYERBOT_AI(member);
+            float memberScore = EvaluateItemScore(proto);
+            if (memberAI)
+            {
+                // Recalculate score based on member's role
+                std::map<uint32, float> memberStatWeights;
+                if (memberAI->IsHeal(member))
+                {
+                    memberStatWeights[ITEM_MOD_INTELLECT] = 1.0f;
+                    memberStatWeights[ITEM_MOD_SPIRIT] = 0.8f;
+                    memberStatWeights[ITEM_MOD_SPELL_POWER] = 1.2f;
+                    memberStatWeights[ITEM_MOD_MANA_REGENERATION] = 0.9f;
+                }
+                else if (memberAI->IsTank(member))
+                {
+                    memberStatWeights[ITEM_MOD_STAMINA] = 1.5f;
+                    memberStatWeights[ITEM_MOD_DODGE_RATING] = 1.0f;
+                    memberStatWeights[ITEM_MOD_PARRY_RATING] = 1.0f;
+                    memberStatWeights[ITEM_MOD_DEFENSE_SKILL_RATING] = 1.2f;
+                }
+                else if (memberAI->IsDps(member))
+                {
+                    uint32 memberClass = member->getClass();
+                    if (memberClass == CLASS_ROGUE || memberClass == CLASS_HUNTER || memberClass == CLASS_DRUID ||
+                        memberClass == CLASS_SHAMAN)
+                        memberStatWeights[ITEM_MOD_AGILITY] = 1.2f;
+                    else if (memberClass == CLASS_WARRIOR || memberClass == CLASS_PALADIN ||
+                             memberClass == CLASS_DEATH_KNIGHT)
+                        memberStatWeights[ITEM_MOD_STRENGTH] = 1.2f;
+                    else if (memberClass == CLASS_MAGE || memberClass == CLASS_WARLOCK || memberClass == CLASS_PRIEST)
+                        memberStatWeights[ITEM_MOD_INTELLECT] = 1.0f;
+                    memberStatWeights[ITEM_MOD_CRIT_RATING] = 0.8f;
+                    memberStatWeights[ITEM_MOD_HASTE_RATING] = 0.7f;
+                }
+                memberScore = 0.0f;
+                for (uint32 i = 0; i < MAX_ITEM_PROTO_STATS; ++i)
+                {
+                    if (proto->ItemStat[i].ItemStatType < MAX_ITEM_MOD && proto->ItemStat[i].ItemStatValue > 0)
+                    {
+                        memberScore +=
+                            memberStatWeights[proto->ItemStat[i].ItemStatType] * proto->ItemStat[i].ItemStatValue;
+                    }
+                }
+                if (member->CanUseItem(proto) == EQUIP_ERR_OK)
+                    memberScore += 10.0f;
+            }
+            if (memberScore > botScore * 1.1f)
+                return false;
+        }
+    }
+
+    return true;
+}
+
+/* RollVote LootRollAction::CalculateRollVote(ItemTemplate const* proto)
 {
     std::ostringstream out;
     out << proto->ItemId;
@@ -180,11 +360,48 @@ RollVote LootRollAction::CalculateRollVote(ItemTemplate const* proto)
     }
 
     return StoreLootAction::IsLootAllowed(proto->ItemId, GET_PLAYERBOT_AI(bot)) ? needVote : PASS;
+}*/
+
+RollVote LootRollAction::CalculateRollVote(ItemTemplate const* proto)
+{
+    Player* bot = botAI->GetBot();
+    RollVote vote = PASS;
+
+    if (!StoreLootAction::IsLootAllowed(proto->ItemId, GET_PLAYERBOT_AI(bot)))
+        return PASS;
+
+    if (ShouldNeedItem(proto))
+    {
+        vote = NEED;
+    }
+    else
+    {
+        float greedChance = 0.8f;
+        if (bot->CanUseItem(proto) == EQUIP_ERR_OK || proto->Class == ITEM_CLASS_MISC)
+        {
+            if (urand(0, 100) < greedChance * 100)
+                vote = GREED;
+        }
+    }
+
+    if (sPlayerbotAIConfig->lootRollLevel == 0)
+    {
+        vote = PASS;
+    }
+    else if (sPlayerbotAIConfig->lootRollLevel == 1)
+    {
+        if (vote == NEED)
+            vote = GREED;
+        else if (vote == GREED)
+            vote = PASS;
+    }
+
+    return vote;
 }
 
 bool MasterLootRollAction::isUseful() { return !botAI->HasActivePlayerMaster(); }
 
-bool MasterLootRollAction::Execute(Event event)
+/* bool MasterLootRollAction::Execute(Event event)
 {
     Player* bot = QueryItemUsageAction::botAI->GetBot();
 
@@ -218,6 +435,31 @@ bool MasterLootRollAction::Execute(Event event)
 
     RollVote vote = CalculateRollVote(proto);
     group->CountRollVote(bot->GetGUID(), creatureGuid, CalculateRollVote(proto));
+
+    return true;
+}*/
+
+bool MasterLootRollAction::Execute(Event event)
+{
+    Player* bot = QueryItemUsageAction::botAI->GetBot();
+
+    WorldPacket p(event.getPacket());
+    ObjectGuid creatureGuid;
+    uint32 mapId, itemSlot, itemId, randomSuffix, randomPropertyId, count, timeout;
+
+    p.rpos(0);
+    p >> creatureGuid >> mapId >> itemSlot >> itemId >> randomSuffix >> randomPropertyId >> count >> timeout;
+
+    ItemTemplate const* proto = sObjectMgr->GetItemTemplate(itemId);
+    if (!proto)
+        return false;
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return false;
+
+    RollVote vote = CalculateRollVote(proto);
+    group->CountRollVote(bot->GetGUID(), creatureGuid, vote);
 
     return true;
 }

@@ -20,6 +20,9 @@ public:
     LootRollAction(PlayerbotAI* botAI, std::string const name = "loot roll") : QueryItemUsageAction(botAI, name) {}
 
     bool Execute(Event event) override;
+    float EvaluateItemScore(ItemTemplate const* proto);
+    bool IsItemUpgrade(ItemTemplate const* proto);
+    bool ShouldNeedItem(ItemTemplate const* proto);
 
 protected:
     RollVote CalculateRollVote(ItemTemplate const* proto);
