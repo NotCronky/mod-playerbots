@@ -235,6 +235,97 @@ float LootRollAction::EvaluateItemScore(ItemTemplate const* proto)
     if (bot->CanUseItem(proto) == EQUIP_ERR_OK)
         score += 10.0f;
 
+    if (proto->Class == ITEM_CLASS_ARMOR)
+    {
+        bool isCompatibleArmor = false;
+        switch (proto->SubClass)
+        {
+            case ITEM_SUBCLASS_ARMOR_CLOTH:
+                isCompatibleArmor = (classId == CLASS_PRIEST || classId == CLASS_MAGE || classId == CLASS_WARLOCK);
+                break;
+            case ITEM_SUBCLASS_ARMOR_LEATHER:
+                isCompatibleArmor = (classId == CLASS_ROGUE || classId == CLASS_DRUID ||
+                                     classId == CLASS_HUNTER && bot->GetLevel() < 40 ||
+                                     classId == CLASS_SHAMAN && bot->GetLevel() < 40);
+                break;
+            case ITEM_SUBCLASS_ARMOR_MAIL:
+                isCompatibleArmor = (classId == CLASS_HUNTER || classId == CLASS_SHAMAN ||
+                                     classId == CLASS_WARRIOR && bot->GetLevel() < 40 ||
+                                     classId == CLASS_PALADIN && bot->GetLevel() < 40);
+                break;
+            case ITEM_SUBCLASS_ARMOR_PLATE:
+                isCompatibleArmor = (classId == CLASS_WARRIOR || classId == CLASS_PALADIN || classId == CLASS_DEATH_KNIGHT);
+                break;
+            default:
+                isCompatibleArmor = true;
+        }
+        if (isCompatibleArmor)
+            score *= 1.5f;
+        else
+            score *= 0.5f;
+    }
+
+    if (proto->Class == ITEM_CLASS_WEAPON)
+    {
+        bool isCompatibleWeapon = false;
+        bool isTwoHanded = (proto->InventoryType == INVTYPE_2HWEAPON || proto->InventoryType == INVTYPE_RANGED ||
+                            proto->InventoryType == INVTYPE_RANGEDRIGHT);
+        switch (proto->SubClass)
+        {
+            case ITEM_SUBCLASS_WEAPON_SWORD:
+            case ITEM_SUBCLASS_WEAPON_MACE:
+            case ITEM_SUBCLASS_WEAPON_AXE:
+                if (!isTwoHanded)
+                {
+                    isCompatibleWeapon =
+                        (classId == CLASS_WARRIOR || classId == CLASS_PALADIN || classId == CLASS_ROGUE ||
+                         classId == CLASS_DEATH_KNIGHT || (classId == CLASS_HUNTER && botAI->IsDps(bot)) ||
+                         (classId == CLASS_SHAMAN && botAI->IsDps(bot)));
+                }
+                else
+                {
+                    isCompatibleWeapon =
+                        (classId == CLASS_WARRIOR || classId == CLASS_PALADIN || classId == CLASS_DEATH_KNIGHT ||
+                         (classId == CLASS_HUNTER && proto->SubClass == ITEM_SUBCLASS_WEAPON_AXE));
+                }
+                break;
+            case ITEM_SUBCLASS_WEAPON_DAGGER:
+                isCompatibleWeapon =
+                    (classId == CLASS_ROGUE || classId == CLASS_HUNTER ||
+                     (classId == CLASS_WARRIOR && botAI->IsDps(bot)) || (classId == CLASS_MAGE && botAI->IsDps(bot)) ||
+                     (classId == CLASS_PRIEST && botAI->IsDps(bot)) || (classId == CLASS_WARLOCK && botAI->IsDps(bot)));
+                break;
+            case ITEM_SUBCLASS_WEAPON_STAFF:
+                isCompatibleWeapon = (classId == CLASS_PRIEST || classId == CLASS_MAGE || classId == CLASS_WARLOCK ||
+                                      (classId == CLASS_DRUID && (botAI->IsHeal(bot) || botAI->IsDps(bot))) ||
+                                      (classId == CLASS_SHAMAN && botAI->IsHeal(bot)));
+                break;
+            case ITEM_SUBCLASS_WEAPON_POLEARM:
+                isCompatibleWeapon = (classId == CLASS_WARRIOR || classId == CLASS_PALADIN || classId == CLASS_HUNTER ||
+                                      classId == CLASS_DEATH_KNIGHT || (classId == CLASS_DRUID && botAI->IsDps(bot)));
+                break;
+            case ITEM_SUBCLASS_WEAPON_BOW:
+            case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+            case ITEM_SUBCLASS_WEAPON_GUN:
+                isCompatibleWeapon = (classId == CLASS_HUNTER || (classId == CLASS_ROGUE && botAI->IsDps(bot)) ||
+                                      (classId == CLASS_WARRIOR && botAI->IsDps(bot)));
+                break;
+            case ITEM_SUBCLASS_WEAPON_FIST:
+                isCompatibleWeapon = (classId == CLASS_ROGUE || classId == CLASS_HUNTER || classId == CLASS_WARRIOR ||
+                                      classId == CLASS_SHAMAN || (classId == CLASS_DRUID && botAI->IsDps(bot)));
+                break;
+            case ITEM_SUBCLASS_WEAPON_WAND:
+                isCompatibleWeapon = (classId == CLASS_PRIEST || classId == CLASS_MAGE || classId == CLASS_WARLOCK);
+                break;
+            default:
+                isCompatibleWeapon = true;
+        }
+        if (isCompatibleWeapon)
+            score *= 1.5f;
+        else
+            score *= 0.5f;
+    }
+
     if (proto->Class == ITEM_CLASS_MISC && proto->SubClass == ITEM_SUBCLASS_JUNK && proto->Quality == ITEM_QUALITY_EPIC)
     {
         if (CanBotUseToken(proto, bot))
@@ -283,7 +374,6 @@ bool LootRollAction::ShouldNeedItem(ItemTemplate const* proto)
             float memberScore = EvaluateItemScore(proto);
             if (memberAI)
             {
-                // Recalculate score based on member's role
                 std::map<uint32, float> memberStatWeights;
                 if (memberAI->IsHeal(member))
                 {
@@ -324,6 +414,111 @@ bool LootRollAction::ShouldNeedItem(ItemTemplate const* proto)
                 }
                 if (member->CanUseItem(proto) == EQUIP_ERR_OK)
                     memberScore += 10.0f;
+
+                // Apply armor type compatibility for member
+                if (proto->Class == ITEM_CLASS_ARMOR)
+                {
+                    bool isCompatibleArmor = false;
+                    uint32 memberClass = member->getClass();
+                    switch (proto->SubClass)
+                    {
+                        case ITEM_SUBCLASS_ARMOR_CLOTH:
+                            isCompatibleArmor = (memberClass == CLASS_PRIEST || memberClass == CLASS_MAGE ||
+                                                 memberClass == CLASS_WARLOCK);
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_LEATHER:
+                            isCompatibleArmor = (memberClass == CLASS_ROGUE || memberClass == CLASS_DRUID ||
+                                                 (memberClass == CLASS_HUNTER && member->GetLevel() < 40) ||
+                                                 (memberClass == CLASS_SHAMAN && member->GetLevel() < 40));
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_MAIL:
+                            isCompatibleArmor = (memberClass == CLASS_HUNTER || memberClass == CLASS_SHAMAN ||
+                                                 (memberClass == CLASS_WARRIOR && member->GetLevel() < 40) ||
+                                                 (memberClass == CLASS_PALADIN && member->GetLevel() < 40));
+                            break;
+                        case ITEM_SUBCLASS_ARMOR_PLATE:
+                            isCompatibleArmor = (memberClass == CLASS_WARRIOR || memberClass == CLASS_PALADIN ||
+                                                 memberClass == CLASS_DEATH_KNIGHT);
+                            break;
+                        default:
+                            isCompatibleArmor = true;
+                    }
+                    if (isCompatibleArmor)
+                        memberScore *= 1.5f;
+                    else
+                        memberScore *= 0.5f;
+                }
+
+                if (proto->Class == ITEM_CLASS_WEAPON)
+                {
+                    uint32 memberClass = member->getClass();
+                    bool isCompatibleWeapon = false;
+                    bool isTwoHanded =
+                        (proto->InventoryType == INVTYPE_2HWEAPON || proto->InventoryType == INVTYPE_RANGED ||
+                         proto->InventoryType == INVTYPE_RANGEDRIGHT);
+                    switch (proto->SubClass)
+                    {
+                        case ITEM_SUBCLASS_WEAPON_SWORD:
+                        case ITEM_SUBCLASS_WEAPON_MACE:
+                        case ITEM_SUBCLASS_WEAPON_AXE:
+                            if (!isTwoHanded)
+                            {
+                                isCompatibleWeapon = (memberClass == CLASS_WARRIOR || memberClass == CLASS_PALADIN ||
+                                                      memberClass == CLASS_ROGUE || memberClass == CLASS_DEATH_KNIGHT ||
+                                                      (memberClass == CLASS_HUNTER && memberAI->IsDps(member)) ||
+                                                      (memberClass == CLASS_SHAMAN && memberAI->IsDps(member)));
+                            }
+                            else
+                            {
+                                isCompatibleWeapon =
+                                    (memberClass == CLASS_WARRIOR || memberClass == CLASS_PALADIN ||
+                                     memberClass == CLASS_DEATH_KNIGHT ||
+                                     (memberClass == CLASS_HUNTER && proto->SubClass == ITEM_SUBCLASS_WEAPON_AXE));
+                            }
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_DAGGER:
+                            isCompatibleWeapon = (memberClass == CLASS_ROGUE || memberClass == CLASS_HUNTER ||
+                                                  (memberClass == CLASS_WARRIOR && memberAI->IsDps(member)) ||
+                                                  (memberClass == CLASS_MAGE && memberAI->IsDps(member)) ||
+                                                  (memberClass == CLASS_PRIEST && memberAI->IsDps(member)) ||
+                                                  (memberClass == CLASS_WARLOCK && memberAI->IsDps(member)));
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_STAFF:
+                            isCompatibleWeapon = (memberClass == CLASS_PRIEST || memberClass == CLASS_MAGE ||
+                                                  memberClass == CLASS_WARLOCK ||
+                                                  (memberClass == CLASS_DRUID &&
+                                                   (memberAI->IsHeal(member) || memberAI->IsDps(member))) ||
+                                                  (memberClass == CLASS_SHAMAN && memberAI->IsHeal(member)));
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_POLEARM:
+                            isCompatibleWeapon = (memberClass == CLASS_WARRIOR || memberClass == CLASS_PALADIN ||
+                                                  memberClass == CLASS_HUNTER || memberClass == CLASS_DEATH_KNIGHT ||
+                                                  (memberClass == CLASS_DRUID && memberAI->IsDps(member)));
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_BOW:
+                        case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+                        case ITEM_SUBCLASS_WEAPON_GUN:
+                            isCompatibleWeapon = (memberClass == CLASS_HUNTER ||
+                                                  (memberClass == CLASS_ROGUE && memberAI->IsDps(member)) ||
+                                                  (memberClass == CLASS_WARRIOR && memberAI->IsDps(member)));
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_FIST:
+                            isCompatibleWeapon = (memberClass == CLASS_ROGUE || memberClass == CLASS_HUNTER ||
+                                                  memberClass == CLASS_WARRIOR || memberClass == CLASS_SHAMAN ||
+                                                  (memberClass == CLASS_DRUID && memberAI->IsDps(member)));
+                            break;
+                        case ITEM_SUBCLASS_WEAPON_WAND:
+                            isCompatibleWeapon = (memberClass == CLASS_PRIEST || memberClass == CLASS_MAGE ||
+                                                  memberClass == CLASS_WARLOCK);
+                            break;
+                        default:
+                            isCompatibleWeapon = true;
+                    }
+                    if (isCompatibleWeapon)
+                        memberScore *= 1.5f;
+                    else
+                        memberScore *= 0.5f;
+                }
             }
             if (memberScore > botScore * 1.1f)
                 return false;
