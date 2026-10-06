@@ -5,6 +5,7 @@
  */
 
 #include "AssassinationRogueStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 class AssassinationRogueStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -73,6 +74,20 @@ std::vector<NextAction> AssassinationRogueStrategy::getDefaultActions()
 void AssassinationRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericRogueStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Mutilate or Envenom (and Subtlety rogues use this strategy too): build with Ghostly Strike,
+    // Hemorrhage or Sinister Strike from 40 energy, Backstab from behind with a dagger, and finish with Eviscerate.
+    if (PlayerbotEra::IsVanilla())
+    {
+        triggers.push_back(new TriggerNode("medium energy available", { NextAction("ghostly strike", ACTION_NORMAL + 6),
+                                                                        NextAction("hemorrhage", ACTION_NORMAL + 5),
+                                                                        NextAction("sinister strike", ACTION_NORMAL + 3) }));
+        triggers.push_back(new TriggerNode("high energy available", { NextAction("backstab", ACTION_NORMAL + 4) }));
+        triggers.push_back(new TriggerNode("combo points 5 available", { NextAction("eviscerate", ACTION_HIGH + 1) }));
+        triggers.push_back(new TriggerNode("target with combo points almost dead",
+                                           { NextAction("eviscerate", ACTION_HIGH + 4) }));
+        triggers.push_back(new TriggerNode("critical health", { NextAction("preparation", ACTION_HIGH + 6) }));
+    }
 
     triggers.push_back(
         new TriggerNode(

@@ -5,6 +5,7 @@
  */
 
 #include "AfflictionWarlockStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 AfflictionWarlockStrategy::AfflictionWarlockStrategy(PlayerbotAI* botAI) : GenericWarlockStrategy(botAI)
@@ -28,6 +29,10 @@ std::vector<NextAction> AfflictionWarlockStrategy::getDefaultActions()
 void AfflictionWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarlockStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Unstable Affliction or Haunt: Siphon Life takes their place.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("siphon life", { NextAction("siphon life", 17.5f) }));
 
     // Main DoT triggers for high uptime
     triggers.push_back(

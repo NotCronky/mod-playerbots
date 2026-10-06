@@ -78,6 +78,12 @@ bool CastFrostNovaAction::isUseful()
         AI_VALUE2(float, "distance", GetTargetName()), 10.f);
 }
 
+bool CastArcaneExplosionAction::isUseful()
+{
+    Unit* target = AI_VALUE(Unit*, "current target");
+    return target && bot->IsWithinCombatRange(target, 10.0f);
+}
+
 bool CastConeOfColdAction::isUseful()
 {
     bool facingTarget = AI_VALUE2(bool, "facing", "current target");

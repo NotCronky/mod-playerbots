@@ -20,6 +20,8 @@ DEBUFF_ENEMY_TRIGGER(ShadowWordPainOnAttackerTrigger, "shadow word: pain");
 DEBUFF_CHECKISOWNER_TRIGGER(VampiricTouchTrigger, "vampiric touch");
 DEBUFF_ENEMY_TRIGGER(VampiricTouchOnAttackerTrigger, "vampiric touch on attacker");
 BUFF_TRIGGER(VampiricEmbraceTrigger, "vampiric embrace");
+// 1.12: Vampiric Embrace is a debuff on the enemy that heals the priest's party.
+DEBUFF_TRIGGER(VampiricEmbraceOnTargetTrigger, "vampiric embrace");
 CURE_TRIGGER(DispelMagicTrigger, "dispel magic", DISPEL_MAGIC);
 CURE_PARTY_TRIGGER(DispelMagicPartyMemberTrigger, "dispel magic", DISPEL_MAGIC);
 CURE_TRIGGER(CureDiseaseTrigger, "cure disease", DISPEL_DISEASE);

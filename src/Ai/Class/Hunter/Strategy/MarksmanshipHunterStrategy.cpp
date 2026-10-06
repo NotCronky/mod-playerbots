@@ -5,6 +5,7 @@
  */
 
 #include "MarksmanshipHunterStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 MarksmanshipHunterStrategy::MarksmanshipHunterStrategy(PlayerbotAI* botAI) : GenericHunterStrategy(botAI)
@@ -15,6 +16,16 @@ MarksmanshipHunterStrategy::MarksmanshipHunterStrategy(PlayerbotAI* botAI) : Gen
 // ===== Default Actions =====
 std::vector<NextAction> MarksmanshipHunterStrategy::getDefaultActions()
 {
+    // 1.12 shot loop (no Kill Command, Kill Shot or Steady Shot): Aimed Shot, Multi-Shot, then Arcane Shot.
+    if (PlayerbotEra::IsVanilla())
+        return {
+            NextAction("serpent sting", 5.6f),
+            NextAction("aimed shot", 5.4f),
+            NextAction("multi-shot", 5.35f),
+            NextAction("arcane shot", 5.3f),
+            NextAction("auto shot", 5.1f)
+        };
+
     return {
         NextAction("kill command", 5.8f),
         NextAction("kill shot", 5.7f),
@@ -30,6 +41,7 @@ std::vector<NextAction> MarksmanshipHunterStrategy::getDefaultActions()
 // ===== Trigger Initialization ===
 void MarksmanshipHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    bool const vanilla = PlayerbotEra::IsVanilla();
     GenericHunterStrategy::InitTriggers(triggers);
 
     triggers.push_back(
@@ -56,14 +68,16 @@ void MarksmanshipHunterStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "low mana",
-            {
-                NextAction("viper sting", 17.5f)
-            }
-        )
-    );
+    // 1.12 Viper Sting drains the target's mana without returning any.
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "low mana",
+                {
+                    NextAction("viper sting", 17.5f)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "no stings",

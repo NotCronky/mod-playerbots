@@ -5,6 +5,7 @@
  */
 
 #include "CombatRogueStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 class CombatRogueStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -77,6 +78,10 @@ std::vector<NextAction> CombatRogueStrategy::getDefaultActions()
 void CombatRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericRogueStrategy::InitTriggers(triggers);
+
+    // 1.12: Sinister Strike from 40 energy (it costs 40-45), not only when energy caps.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("medium energy available", { NextAction("sinister strike", ACTION_NORMAL + 3) }));
 
     triggers.push_back(
         new TriggerNode(
@@ -248,6 +253,17 @@ StealthedRogueStrategy::StealthedRogueStrategy(PlayerbotAI* botAI) : Strategy(bo
 
 std::vector<NextAction> StealthedRogueStrategy::getDefaultActions()
 {
+    // 1.12: Premeditation (Subtlety) adds two combo points before the opener.
+    if (PlayerbotEra::IsVanilla())
+        return {
+            NextAction("premeditation", ACTION_NORMAL + 5),
+            NextAction("ambush", ACTION_NORMAL + 4),
+            NextAction("backstab", ACTION_NORMAL + 3),
+            NextAction("cheap shot", ACTION_NORMAL + 2),
+            NextAction("sinister strike", ACTION_NORMAL + 1),
+            NextAction("melee", ACTION_NORMAL)
+        };
+
     return {
         NextAction("ambush", ACTION_NORMAL + 4),
         NextAction("backstab", ACTION_NORMAL + 3),

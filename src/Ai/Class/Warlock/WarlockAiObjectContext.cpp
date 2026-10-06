@@ -177,6 +177,7 @@ public:
         creators["metamorphosis not active"] = &WarlockTriggerFactoryInternal::metamorphosis_not_active;
         creators["meta melee flee check"] = &WarlockTriggerFactoryInternal::meta_melee_flee_check;
         creators["curse of agony"] = &WarlockTriggerFactoryInternal::curse_of_agony;
+        creators["siphon life"] = &WarlockTriggerFactoryInternal::siphon_life;
         creators["curse of agony on attacker"] = &WarlockTriggerFactoryInternal::curse_of_agony_on_attacker;
         creators["curse of the elements"] = &WarlockTriggerFactoryInternal::curse_of_the_elements;
         creators["curse of doom"] = &WarlockTriggerFactoryInternal::curse_of_doom;
@@ -225,6 +226,7 @@ private:
     static Trigger* metamorphosis_not_active(PlayerbotAI* ai) { return new MetamorphosisNotActiveTrigger(ai); }
     static Trigger* meta_melee_flee_check(PlayerbotAI* ai) { return new MetaMeleeEnemyTooCloseForSpellTrigger(ai); }
     static Trigger* curse_of_agony(PlayerbotAI* botAI) { return new CurseOfAgonyTrigger(botAI); }
+    static Trigger* siphon_life(PlayerbotAI* botAI) { return new SiphonLifeTrigger(botAI); }
     static Trigger* curse_of_agony_on_attacker(PlayerbotAI* botAI) { return new CurseOfAgonyOnAttackerTrigger(botAI); }
     static Trigger* curse_of_the_elements(PlayerbotAI* ai) { return new CurseOfTheElementsTrigger(ai); }
     static Trigger* curse_of_doom(PlayerbotAI* ai) { return new CurseOfDoomTrigger(ai); }
@@ -295,6 +297,9 @@ public:
         creators["demon charge"] = &WarlockAiObjectContextInternal::demon_charge;
         creators["shadow cleave"] = &WarlockAiObjectContextInternal::shadow_cleave;
         creators["shadowburn"] = &WarlockAiObjectContextInternal::shadowburn;
+        creators["death coil"] = &WarlockAiObjectContextInternal::death_coil;
+        creators["howl of terror"] = &WarlockAiObjectContextInternal::howl_of_terror;
+        creators["siphon life"] = &WarlockAiObjectContextInternal::siphon_life;
         creators["shadowflame"] = &WarlockAiObjectContextInternal::shadowflame;
         creators["immolation aura"] = &WarlockAiObjectContextInternal::immolation_aura;
         creators["chaos bolt"] = &WarlockAiObjectContextInternal::chaos_bolt;
@@ -365,6 +370,9 @@ private:
     static Action* demon_charge(PlayerbotAI* ai) { return new DemonChargeAction(ai); }
     static Action* shadow_cleave(PlayerbotAI* ai) { return new ShadowCleaveAction(ai); }
     static Action* shadowburn(PlayerbotAI* ai) { return new CastShadowburnAction(ai); }
+    static Action* death_coil(PlayerbotAI* botAI) { return new CastWarlockDeathCoilAction(botAI); }
+    static Action* howl_of_terror(PlayerbotAI* botAI) { return new CastHowlOfTerrorAction(botAI); }
+    static Action* siphon_life(PlayerbotAI* botAI) { return new CastSiphonLifeAction(botAI); }
     static Action* shadowflame(PlayerbotAI* botAI) { return new CastShadowflameAction(botAI); }
     static Action* immolation_aura(PlayerbotAI* botAI) { return new CastImmolationAuraAction(botAI); }
     static Action* chaos_bolt(PlayerbotAI* botAI) { return new CastChaosBoltAction(botAI); }

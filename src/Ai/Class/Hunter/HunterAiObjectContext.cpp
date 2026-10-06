@@ -178,6 +178,9 @@ public:
         creators["wing clip"] = &HunterAiObjectContextInternal::wing_clip;
         creators["raptor strike"] = &HunterAiObjectContextInternal::raptor_strike;
         creators["mongoose bite"] = &HunterAiObjectContextInternal::mongoose_bite;
+        creators["counterattack"] = &HunterAiObjectContextInternal::counterattack;
+        creators["scatter shot"] = &HunterAiObjectContextInternal::scatter_shot;
+        creators["frost trap"] = &HunterAiObjectContextInternal::frost_trap;
         creators["feed pet"] = &HunterAiObjectContextInternal::feed_pet;
         creators["bestial wrath"] = &HunterAiObjectContextInternal::bestial_wrath;
         creators["scare beast"] = &HunterAiObjectContextInternal::scare_beast;
@@ -239,6 +242,9 @@ private:
     static Action* wing_clip(PlayerbotAI* botAI) { return new CastWingClipAction(botAI); }
     static Action* raptor_strike(PlayerbotAI* botAI) { return new CastRaptorStrikeAction(botAI); }
     static Action* mongoose_bite(PlayerbotAI* botAI) { return new CastMongooseBiteAction(botAI); }
+    static Action* counterattack(PlayerbotAI* botAI) { return new CastCounterattackAction(botAI); }
+    static Action* scatter_shot(PlayerbotAI* botAI) { return new CastScatterShotAction(botAI); }
+    static Action* frost_trap(PlayerbotAI* botAI) { return new CastFrostTrapAction(botAI); }
     static Action* tranquilizing_shot(PlayerbotAI* botAI) { return new CastTranquilizingShotAction(botAI); }
     static Action* steady_shot(PlayerbotAI* botAI) { return new CastSteadyShotAction(botAI); }
     static Action* kill_shot(PlayerbotAI* botAI) { return new CastKillShotAction(botAI); }

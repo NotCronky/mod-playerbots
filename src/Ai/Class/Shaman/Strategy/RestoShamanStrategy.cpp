@@ -5,6 +5,7 @@
  */
 
 #include "RestoShamanStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 RestoShamanStrategy::RestoShamanStrategy(PlayerbotAI* botAI) : GenericShamanStrategy(botAI)
@@ -16,6 +17,10 @@ RestoShamanStrategy::RestoShamanStrategy(PlayerbotAI* botAI) : GenericShamanStra
 void RestoShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericShamanStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Water Shield: Lightning Shield for every spec.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("lightning shield", { NextAction("lightning shield", 19.5f) }));
 
     // Totem Triggers
     triggers.push_back(new TriggerNode("call of the elements", { NextAction("call of the elements", 60.0f) }));

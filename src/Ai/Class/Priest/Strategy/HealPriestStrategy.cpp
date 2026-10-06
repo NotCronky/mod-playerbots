@@ -5,6 +5,7 @@
  */
 
 #include "HealPriestStrategy.h"
+#include "PlayerbotEra.h"
 #include "GenericPriestStrategyActionNodeFactory.h"
 #include "Playerbots.h"
 
@@ -23,6 +24,16 @@ std::vector<NextAction> HealPriestStrategy::getDefaultActions()
 void HealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Penance or Prayer of Mending: Greater Heal for big deficits, Heal (Lesser Heal before it) for
+    // steady damage, Renew on the lightly hurt.
+    if (PlayerbotEra::IsVanilla())
+    {
+        triggers.push_back(new TriggerNode("party member low health", { NextAction("greater heal on party", ACTION_MEDIUM_HEAL + 1) }));
+        triggers.push_back(new TriggerNode("party member medium health", { NextAction("heal on party", ACTION_LIGHT_HEAL + 4),
+                                                                          NextAction("lesser heal on party", ACTION_LIGHT_HEAL + 3),
+                                                                          NextAction("renew on party", ACTION_LIGHT_HEAL + 2) }));
+    }
 
     triggers.push_back(
         new TriggerNode(

@@ -5,6 +5,7 @@
  */
 
 #include "TotemsShamanStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 namespace
@@ -144,6 +145,14 @@ WrathOfAirTotemStrategy::WrathOfAirTotemStrategy(PlayerbotAI* botAI) : GenericSh
 void WrathOfAirTotemStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericShamanStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Wrath of Air Totem or totem bar: casters drop Tranquil Air Totem (20% less threat for the party).
+    if (PlayerbotEra::IsVanilla())
+    {
+        triggers.push_back(new TriggerNode("no air totem", { NextAction("tranquil air totem", 55.0f) }));
+        return;
+    }
+
     // If the bot hasn't learned Wrath of Air Totem yet, set Grounding Totem instead.
     Player* bot = botAI->GetBot();
     if (bot->HasSpell(SPELL_WRATH_OF_AIR_TOTEM))

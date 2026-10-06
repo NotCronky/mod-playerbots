@@ -464,6 +464,28 @@ public:
     CastChaosBoltAction(PlayerbotAI* ai) : CastSpellAction(ai, "chaos bolt") {}
 };
 
+// Horrifies and heals the warlock (emergency).
+class CastWarlockDeathCoilAction : public CastSpellAction
+{
+public:
+    CastWarlockDeathCoilAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "death coil") {}
+};
+
+// Fears the enemies around the warlock (escape).
+class CastHowlOfTerrorAction : public CastSpellAction
+{
+public:
+    CastHowlOfTerrorAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "howl of terror") {}
+    std::string const GetTargetName() override { return "self target"; }
+};
+
+// Affliction talent (1.12 and 2.4.3; replaced by talents in 3.3.5).
+class CastSiphonLifeAction : public CastDebuffSpellAction
+{
+public:
+    CastSiphonLifeAction(PlayerbotAI* botAI) : CastDebuffSpellAction(botAI, "siphon life", true) {}
+};
+
 class CastSearingPainAction : public CastSpellAction
 {
 public:

@@ -5,6 +5,7 @@
  */
 
 #include "GenericWarlockStrategy.h"
+#include "PlayerbotEra.h"
 
 GenericWarlockStrategy::GenericWarlockStrategy(PlayerbotAI* botAI) : CombatStrategy(botAI)
 {
@@ -19,6 +20,13 @@ std::vector<NextAction> GenericWarlockStrategy::getDefaultActions()
 void GenericWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
+
+    // 1.12: Death Coil heals and horrifies when in trouble; Howl of Terror before running from melee.
+    if (PlayerbotEra::IsVanilla())
+    {
+        triggers.push_back(new TriggerNode("critical health", { NextAction("death coil", 45.0f) }));
+        triggers.push_back(new TriggerNode("enemy too close for spell", { NextAction("howl of terror", 39.5f) }));
+    }
 
     triggers.push_back(
         new TriggerNode(

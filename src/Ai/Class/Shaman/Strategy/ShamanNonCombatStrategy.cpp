@@ -5,6 +5,7 @@
  */
 
 #include "ShamanNonCombatStrategy.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "Playerbots.h"
 #include "Strategy.h"
@@ -83,6 +84,10 @@ ShamanNonCombatStrategy::ShamanNonCombatStrategy(PlayerbotAI* botAI) : NonCombat
 void ShamanNonCombatStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     NonCombatStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Water Shield: Lightning Shield for every spec.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("lightning shield", { NextAction("lightning shield", 20.0f) }));
 
     // Totemic Recall
     triggers.push_back(new TriggerNode("totemic recall", { NextAction("totemic recall", 60.0f) }));

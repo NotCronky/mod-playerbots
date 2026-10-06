@@ -5,6 +5,7 @@
  */
 
 #include "GenericMageStrategy.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "Playerbots.h"
 #include "RangedCombatStrategy.h"
@@ -173,6 +174,10 @@ void MageCcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 void MageAoeStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode("blizzard channel check", { NextAction("cancel channel", 26.0f) }));
+
+    // 1.12: Arcane Explosion on a pack in point-blank range, for every spec.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("light aoe", { NextAction("arcane explosion", 21.5f) }));
 
     Player* bot = botAI->GetBot();
     int tab = AiFactory::GetPlayerSpecTab(bot);

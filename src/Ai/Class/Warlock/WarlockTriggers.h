@@ -226,6 +226,12 @@ public:
     HauntTrigger(PlayerbotAI* ai) : DebuffTrigger(ai, "haunt", 1, true, 0) {}
 };
 
+class SiphonLifeTrigger : public DebuffTrigger
+{
+public:
+    SiphonLifeTrigger(PlayerbotAI* botAI) : DebuffTrigger(botAI, "siphon life", 1, true, 0.5f) {}
+};
+
 class CurseOfAgonyTrigger : public DebuffTrigger
 {
 public:

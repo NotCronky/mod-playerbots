@@ -492,6 +492,26 @@ public:
         CastSpellAction(botAI, "mongoose bite") {}
 };
 
+// After parrying (Survival talent); the server checks the parry state.
+class CastCounterattackAction : public CastSpellAction
+{
+public:
+    CastCounterattackAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "counterattack") {}
+};
+
+// Escapes from melee: disorients the target (Marksmanship talent), or a trap at the hunter's feet that slows it.
+class CastScatterShotAction : public CastSpellAction
+{
+public:
+    CastScatterShotAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "scatter shot") {}
+};
+
+class CastFrostTrapAction : public CastSpellAction
+{
+public:
+    CastFrostTrapAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "frost trap") {}
+};
+
 // AoE Spells
 
 class CastMultiShotAction : public CastSpellAction

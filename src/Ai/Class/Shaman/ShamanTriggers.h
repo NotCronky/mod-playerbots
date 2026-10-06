@@ -140,6 +140,13 @@ public:
 
     // CC, Interrupt, and Dispel Triggers
 
+// 1.12: Earth Shock interrupts (there is no Wind Shear).
+class EarthShockInterruptSpellTrigger : public InterruptSpellTrigger
+{
+public:
+    EarthShockInterruptSpellTrigger(PlayerbotAI* botAI) : InterruptSpellTrigger(botAI, "earth shock") {}
+};
+
 class WindShearInterruptSpellTrigger : public InterruptSpellTrigger
 {
 public:

@@ -5,6 +5,7 @@
  */
 
 #include "ArcaneMageStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 // ===== Action Node Factory =====
@@ -37,6 +38,16 @@ ArcaneMageStrategy::ArcaneMageStrategy(PlayerbotAI* botAI) : GenericMageStrategy
 // ===== Default Actions =====
 std::vector<NextAction> ArcaneMageStrategy::getDefaultActions()
 {
+    // 1.12 has no Arcane Blast or Arcane Barrage: arcane casts Frostbolt (with Arcane Power), Arcane Missiles
+    // next, Fire Blast on the move.
+    if (PlayerbotEra::IsVanilla())
+        return {
+            NextAction("frostbolt", 5.6f),
+            NextAction("arcane missiles", 5.5f),
+            NextAction("fire blast", 5.3f),
+            NextAction("shoot", 5.0f)
+        };
+
     return {
         NextAction("arcane blast", 5.6f),
         NextAction("arcane missiles", 5.5f),

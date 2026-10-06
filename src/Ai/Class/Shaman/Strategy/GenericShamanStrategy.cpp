@@ -5,6 +5,7 @@
  */
 
 #include "GenericShamanStrategy.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "Playerbots.h"
 #include "Strategy.h"
@@ -114,6 +115,10 @@ GenericShamanStrategy::GenericShamanStrategy(PlayerbotAI* botAI) : CombatStrateg
 void GenericShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
+
+    // 1.12 has no Wind Shear: Earth Shock interrupts.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("earth shock interrupt", { NextAction("earth shock", 23.5f) }));
 
     triggers.push_back(new TriggerNode("wind shear", { NextAction("wind shear", 23.0f), }));
     triggers.push_back(new TriggerNode("wind shear on enemy healer", { NextAction("wind shear on enemy healer", 23.0f), }));

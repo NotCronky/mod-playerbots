@@ -16,6 +16,7 @@
 #include "PaladinAiObjectContext.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "PriestAiObjectContext.h"
 #include "RotationBotSupport.h"
@@ -590,7 +591,9 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
             if (tab == WARLOCK_TAB_AFFLICTION)
                 nonCombatEngine->addStrategiesNoInit("felhunter", "spellstone", nullptr);
             else if (tab == WARLOCK_TAB_DEMONOLOGY)
-                nonCombatEngine->addStrategiesNoInit("felguard", "spellstone", nullptr);
+                // 1.12 has no Felguard: the felguard strategy would keep replacing the Felhunter it falls back to.
+                nonCombatEngine->addStrategiesNoInit(PlayerbotEra::IsVanilla() ? "felhunter" : "felguard", "spellstone",
+                                                     nullptr);
             else if (tab == WARLOCK_TAB_DESTRUCTION)
                 nonCombatEngine->addStrategiesNoInit("imp", "firestone", nullptr);
 

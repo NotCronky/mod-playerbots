@@ -5,6 +5,7 @@
  */
 
 #include "GenericMageNonCombatStrategy.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "Playerbots.h"
 
@@ -48,7 +49,11 @@ void MageBuffManaStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
 void MageBuffDpsStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
-    triggers.push_back(new TriggerNode("molten armor", { NextAction("molten armor", 19.0f) }));
+    // 1.12 has no Molten Armor: Mage Armor.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("mage armor", { NextAction("mage armor", 19.0f) }));
+    else
+        triggers.push_back(new TriggerNode("molten armor", { NextAction("molten armor", 19.0f) }));
 }
 
 void MageBuffStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)

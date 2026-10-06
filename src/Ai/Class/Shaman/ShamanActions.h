@@ -8,6 +8,7 @@
 #define PLAYERBOTS_SHAMANACTIONS_H
 
 #include "GenericSpellActions.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
 #include "TotemsShamanStrategy.h"
@@ -211,14 +212,15 @@ class CastCureToxinsActionSham : public CastCureSpellAction
 {
 public:
     CastCureToxinsActionSham(PlayerbotAI* botAI) :
-        CastCureSpellAction(botAI, "cure toxins") {}
+        CastCureSpellAction(botAI, PlayerbotEra::IsVanilla() ? "cure poison" : "cure toxins") {}
 };
 
 class CastCureToxinsPoisonOnPartyActionSham : public CurePartyMemberAction
 {
 public:
     CastCureToxinsPoisonOnPartyActionSham(PlayerbotAI* botAI) :
-        CurePartyMemberAction(botAI, "cure toxins", DISPEL_POISON) {}
+        // 1.12 has Cure Poison and Cure Disease in place of Cure Toxins.
+        CurePartyMemberAction(botAI, PlayerbotEra::IsVanilla() ? "cure poison" : "cure toxins", DISPEL_POISON) {}
 
     std::string const getName() override { return "cure toxins poison on party"; }
 };
@@ -227,7 +229,7 @@ class CastCureToxinsDiseaseOnPartyActionSham : public CurePartyMemberAction
 {
 public:
     CastCureToxinsDiseaseOnPartyActionSham(PlayerbotAI* botAI) :
-        CurePartyMemberAction(botAI, "cure toxins", DISPEL_DISEASE) {}
+        CurePartyMemberAction(botAI, PlayerbotEra::IsVanilla() ? "cure disease" : "cure toxins", DISPEL_DISEASE) {}
 
     std::string const getName() override { return "cure toxins disease on party"; }
 };
@@ -551,6 +553,13 @@ class CastFireResistanceTotemAction : public CastTotemAction
 public:
     CastFireResistanceTotemAction(PlayerbotAI* botAI) :
         CastTotemAction(botAI, "fire resistance totem", "fire resistance") {}
+};
+
+// 1.12 casters' air totem: the party's threat is reduced by 20%.
+class CastTranquilAirTotemAction : public CastTotemAction
+{
+public:
+    CastTranquilAirTotemAction(PlayerbotAI* botAI) : CastTotemAction(botAI, "tranquil air totem", "tranquil air") {}
 };
 
 class CastWrathOfAirTotemAction : public CastTotemAction

@@ -127,6 +127,10 @@ public:
         creators["riposte"] = &RogueAiObjectContextInternal::riposte;
         creators["mutilate"] = &RogueAiObjectContextInternal::mutilate;
         creators["sinister strike"] = &RogueAiObjectContextInternal::sinister_strike;
+        creators["hemorrhage"] = &RogueAiObjectContextInternal::hemorrhage;
+        creators["ghostly strike"] = &RogueAiObjectContextInternal::ghostly_strike;
+        creators["premeditation"] = &RogueAiObjectContextInternal::premeditation;
+        creators["preparation"] = &RogueAiObjectContextInternal::preparation;
         creators["gouge"] = &RogueAiObjectContextInternal::gouge;
         creators["kidney shot"] = &RogueAiObjectContextInternal::kidney_shot;
         creators["rupture"] = &RogueAiObjectContextInternal::rupture;
@@ -179,6 +183,10 @@ private:
         return new CastSinisterStrikeAction(botAI);
     }
     static Action* gouge(PlayerbotAI* botAI) { return new CastGougeAction(botAI); }
+    static Action* hemorrhage(PlayerbotAI* botAI) { return new CastHemorrhageAction(botAI); }
+    static Action* ghostly_strike(PlayerbotAI* botAI) { return new CastGhostlyStrikeAction(botAI); }
+    static Action* premeditation(PlayerbotAI* botAI) { return new CastPremeditationAction(botAI); }
+    static Action* preparation(PlayerbotAI* botAI) { return new CastPreparationAction(botAI); }
     static Action* kidney_shot(PlayerbotAI* botAI) { return new CastKidneyShotAction(botAI); }
     static Action* rupture(PlayerbotAI* botAI) { return new CastRuptureAction(botAI); }
     static Action* slice_and_dice(PlayerbotAI* botAI) { return new CastSliceAndDiceAction(botAI); }

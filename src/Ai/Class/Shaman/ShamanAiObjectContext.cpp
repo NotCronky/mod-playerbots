@@ -137,6 +137,7 @@ public:
     ShamanATriggerFactoryInternal()
     {
         creators["wind shear"] = &ShamanATriggerFactoryInternal::wind_shear;
+        creators["earth shock interrupt"] = &ShamanATriggerFactoryInternal::earth_shock_interrupt;
         creators["purge"] = &ShamanATriggerFactoryInternal::purge;
         creators["main hand weapon no imbue"] = &ShamanATriggerFactoryInternal::main_hand_weapon_no_imbue;
         creators["off hand weapon no imbue"] = &ShamanATriggerFactoryInternal::off_hand_weapon_no_imbue;
@@ -213,6 +214,7 @@ private:
     static Trigger* water_breathing_on_party(PlayerbotAI* botAI) { return new WaterBreathingOnPartyTrigger(botAI); }
     static Trigger* water_walking_on_party(PlayerbotAI* botAI) { return new WaterWalkingOnPartyTrigger(botAI); }
     static Trigger* wind_shear(PlayerbotAI* botAI) { return new WindShearInterruptSpellTrigger(botAI); }
+    static Trigger* earth_shock_interrupt(PlayerbotAI* botAI) { return new EarthShockInterruptSpellTrigger(botAI); }
     static Trigger* purge(PlayerbotAI* botAI) { return new PurgeTrigger(botAI); }
     static Trigger* main_hand_weapon_no_imbue(PlayerbotAI* botAI) { return new MainHandWeaponNoImbueTrigger(botAI); }
     static Trigger* off_hand_weapon_no_imbue(PlayerbotAI* botAI) { return new OffHandWeaponNoImbueTrigger(botAI); }
@@ -329,6 +331,7 @@ public:
         creators["mana tide totem"] = &ShamanAiObjectContextInternal::mana_tide_totem;
         creators["fire resistance totem"] = &ShamanAiObjectContextInternal::fire_resistance_totem;
         creators["wrath of air totem"] = &ShamanAiObjectContextInternal::wrath_of_air_totem;
+        creators["tranquil air totem"] = &ShamanAiObjectContextInternal::tranquil_air_totem;
         creators["windfury totem"] = &ShamanAiObjectContextInternal::windfury_totem;
         creators["nature resistance totem"] = &ShamanAiObjectContextInternal::nature_resistance_totem;
         creators["set strength of earth totem"] = &ShamanAiObjectContextInternal::set_strength_of_earth_totem;
@@ -420,6 +423,7 @@ private:
     static Action* mana_tide_totem(PlayerbotAI* botAI) { return new CastManaTideTotemAction(botAI); }
     static Action* fire_resistance_totem(PlayerbotAI* botAI) { return new CastFireResistanceTotemAction(botAI); }
     static Action* wrath_of_air_totem(PlayerbotAI* botAI) { return new CastWrathOfAirTotemAction(botAI); }
+    static Action* tranquil_air_totem(PlayerbotAI* botAI) { return new CastTranquilAirTotemAction(botAI); }
     static Action* windfury_totem(PlayerbotAI* botAI) { return new CastWindfuryTotemAction(botAI); }
     static Action* nature_resistance_totem(PlayerbotAI* botAI) { return new CastNatureResistanceTotemAction(botAI); }
     static Action* set_strength_of_earth_totem(PlayerbotAI* botAI) { return new SetStrengthOfEarthTotemAction(botAI); }

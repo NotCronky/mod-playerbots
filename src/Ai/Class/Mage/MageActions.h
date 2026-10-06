@@ -373,6 +373,16 @@ public:
     ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
 };
 
+// Point-blank AoE: only with the target (and the pack around it) within 10 yards.
+class CastArcaneExplosionAction : public CastSpellAction
+{
+public:
+    CastArcaneExplosionAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "arcane explosion") {}
+    std::string const GetTargetName() override { return "self target"; }
+    ActionThreatType getThreatType() override { return ActionThreatType::Aoe; }
+    bool isUseful() override;
+};
+
 class CastConeOfColdAction : public CastSpellAction
 {
 public:

@@ -191,6 +191,7 @@ public:
         creators["deep freeze"] = &MageAiObjectContextInternal::deep_freeze;
         creators["blizzard"] = &MageAiObjectContextInternal::blizzard;
         creators["cone of cold"] = &MageAiObjectContextInternal::cone_of_cold;
+        creators["arcane explosion"] = &MageAiObjectContextInternal::arcane_explosion;
         creators["frost nova"] = &MageAiObjectContextInternal::frost_nova;
         creators["arcane intellect"] = &MageAiObjectContextInternal::arcane_intellect;
         creators["arcane intellect on party"] = &MageAiObjectContextInternal::arcane_intellect_on_party;
@@ -257,6 +258,7 @@ private:
     static Action* deep_freeze(PlayerbotAI* botAI) { return new CastDeepFreezeAction(botAI); }
     static Action* blizzard(PlayerbotAI* botAI) { return new CastBlizzardAction(botAI); }
     static Action* cone_of_cold(PlayerbotAI* botAI) { return new CastConeOfColdAction(botAI); }
+    static Action* arcane_explosion(PlayerbotAI* botAI) { return new CastArcaneExplosionAction(botAI); }
     static Action* frost_nova(PlayerbotAI* botAI) { return new CastFrostNovaAction(botAI); }
     static Action* arcane_intellect(PlayerbotAI* botAI) { return new CastArcaneIntellectAction(botAI); }
     static Action* arcane_intellect_on_party(PlayerbotAI* botAI) { return new CastArcaneIntellectOnPartyAction(botAI); }
