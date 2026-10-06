@@ -131,6 +131,7 @@ bool PlayerbotAIConfig::Initialize()
     mediumMana = sConfigMgr->GetOption<int32>("AiPlayerbot.MediumMana", 40);
     highMana = sConfigMgr->GetOption<int32>("AiPlayerbot.HighMana", 65);
     autoSaveMana = sConfigMgr->GetOption<bool>("AiPlayerbot.AutoSaveMana", true);
+    useRotationBot = sConfigMgr->GetOption<bool>("AiPlayerbot.UseRotationBot", false);
     saveManaThreshold = sConfigMgr->GetOption<int32>("AiPlayerbot.SaveManaThreshold", 60);
     switch (sConfigMgr->GetOption<uint32>("AiPlayerbot.AutoGreaterBlessings", 1))
     {

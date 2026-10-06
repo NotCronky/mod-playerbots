@@ -58,6 +58,7 @@
 #include "RevealGatheringItemAction.h"
 #include "RpgAction.h"
 #include "RpgSubActions.h"
+#include "RotationBotAction.h"
 #include "RtiAction.h"
 #include "SayAction.h"
 #include "ShareQuestAction.h"
@@ -90,6 +91,8 @@ public:
         creators["move random"] = &ActionContext::move_random;
         creators["attack"] = &ActionContext::melee;
         creators["melee"] = &ActionContext::melee;
+        creators["rotation"] = &ActionContext::rotation;
+        creators["rotation precombat"] = &ActionContext::rotation_precombat;
         creators["switch to melee"] = &ActionContext::switch_to_melee;
         creators["switch to ranged"] = &ActionContext::switch_to_ranged;
         creators["reach spell"] = &ActionContext::ReachSpell;
@@ -308,6 +311,8 @@ private:
     static Action* _return(PlayerbotAI* botAI) { return new ReturnAction(botAI); }
     static Action* shoot(PlayerbotAI* botAI) { return new CastShootAction(botAI); }
     static Action* melee(PlayerbotAI* botAI) { return new MeleeAction(botAI); }
+    static Action* rotation(PlayerbotAI* botAI) { return new RotationBotAction(botAI, true); }
+    static Action* rotation_precombat(PlayerbotAI* botAI) { return new RotationBotAction(botAI, false); }
     static Action* switch_to_melee(PlayerbotAI* botAI) { return new SwitchToMeleeAction(botAI); }
     static Action* switch_to_ranged(PlayerbotAI* botAI) { return new SwitchToRangedAction(botAI); }
     static Action* ReachSpell(PlayerbotAI* botAI) { return new ReachSpellAction(botAI); }

@@ -45,6 +45,7 @@
 #include "RacialsStrategy.h"
 #include "RangedCombatStrategy.h"
 #include "ReturnStrategy.h"
+#include "RotationBotStrategy.h"
 #include "RpgStrategy.h"
 #include "RunawayStrategy.h"
 #include "StayStrategy.h"
@@ -81,6 +82,8 @@ public:
         creators["kite"] = &StrategyContext::kite;
         creators["potions"] = &StrategyContext::potions;
         creators["cast time"] = &StrategyContext::cast_time;
+        creators["rotation"] = &StrategyContext::rotation;
+        creators["rotation nc"] = &StrategyContext::rotation_nc;
         creators["threat"] = &StrategyContext::threat;
         creators["focus"] = &StrategyContext::focus;
         creators["tell target"] = &StrategyContext::tell_target;
@@ -144,6 +147,8 @@ private:
     static Strategy* threat(PlayerbotAI* botAI) { return new ThreatStrategy(botAI); }
     static Strategy* focus(PlayerbotAI* botAI) { return new FocusStrategy(botAI); }
     static Strategy* cast_time(PlayerbotAI* botAI) { return new CastTimeStrategy(botAI); }
+    static Strategy* rotation(PlayerbotAI* botAI) { return new RotationBotStrategy(botAI); }
+    static Strategy* rotation_nc(PlayerbotAI* botAI) { return new RotationBotNonCombatStrategy(botAI); }
     static Strategy* potions(PlayerbotAI* botAI) { return new UsePotionsStrategy(botAI); }
     static Strategy* kite(PlayerbotAI* botAI) { return new KiteStrategy(botAI); }
     static Strategy* duel(PlayerbotAI* botAI) { return new DuelStrategy(botAI); }

@@ -473,6 +473,13 @@ AiPlayerbot.DropObsoleteQuests = 1
 # Auto add dungeon/raid strategies when entering the instance if implemented
 AiPlayerbot.ApplyInstanceStrategies = 1
 
+# Fight with mod-rotation-bot's profiles in place of the class strategies, for bots with a profile
+# that fits their class and spec. Needs mod-rotation-bot; without it this does nothing.
+# Movement, targeting, pulling and the generic strategies (racials, potions, avoid aoe) stay.
+# Out of combat the profile's precombat list picks stances, forms, buffs and pets.
+# Default: 0 (disabled)
+AiPlayerbot.UseRotationBot = 0
+
 # Enable auto avoid aoe strategy
 # Default: 1 (enabled)
 AiPlayerbot.AutoAvoidAoe = 1
