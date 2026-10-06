@@ -6,6 +6,8 @@
 
 #include "TankWarriorStrategy.h"
 
+#include "PlayerbotEra.h"
+
 class TankWarriorStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:
@@ -123,6 +125,16 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
+    // 1.12 threat priority: Shield Slam (from 20 rage) > Revenge > Sunder Armor > Heroic Strike at 40 rage, with
+    // Shield Block last (a 10 rage sink otherwise). There is no Devastate (Sunder Armor stands in) and Thunder Clap
+    // is Battle Stance only.
+    bool const vanilla = PlayerbotEra::IsVanilla();
+    if (vanilla)
+    {
+        triggers.push_back(new TriggerNode("light rage available", { NextAction("shield slam", ACTION_HIGH + 4) }));
+        triggers.push_back(new TriggerNode("medium rage available", { NextAction("heroic strike", ACTION_NORMAL + 3) }));
+    }
+
     triggers.push_back(
         new TriggerNode(
             "vigilance",
@@ -141,14 +153,15 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "thunder clap and rage",
-            {
-                NextAction("thunder clap", ACTION_MOVE + 11)
-            }
-        )
-    );
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "thunder clap and rage",
+                {
+                    NextAction("thunder clap", ACTION_MOVE + 11)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "defensive stance",
@@ -194,7 +207,7 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "shield block",
             {
-                NextAction("shield block", ACTION_INTERRUPT + 1)
+                NextAction("shield block", vanilla ? ACTION_NORMAL + 2 : ACTION_INTERRUPT + 1)
             }
         )
     );
@@ -202,7 +215,7 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "revenge",
             {
-                NextAction("revenge", ACTION_HIGH + 2)
+                NextAction("revenge", vanilla ? ACTION_HIGH + 3 : ACTION_HIGH + 2)
             }
         )
     );
@@ -335,12 +348,13 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "medium rage available",
-            {
-                NextAction("thunder clap", ACTION_HIGH + 1)
-            }
-        )
-    );
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "medium rage available",
+                {
+                    NextAction("thunder clap", ACTION_HIGH + 1)
+                }
+            )
+        );
 }

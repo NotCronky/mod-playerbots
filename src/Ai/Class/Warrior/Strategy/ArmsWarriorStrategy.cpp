@@ -6,6 +6,8 @@
 
 #include "ArmsWarriorStrategy.h"
 
+#include "PlayerbotEra.h"
+
 class ArmsWarriorStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:
@@ -88,6 +90,12 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
+    // 1.12: Execute > Mortal Strike > Overpower, with Rend only as a filler.
+    bool const vanilla = PlayerbotEra::IsVanilla();
+    float const rend = vanilla ? ACTION_NORMAL + 1 : ACTION_HIGH + 8;
+    float const mortalStrike = vanilla ? ACTION_HIGH + 5 : ACTION_HIGH + 3;
+    float const execute = vanilla ? ACTION_HIGH + 6 : ACTION_HIGH + 5;
+
     triggers.push_back(
         new TriggerNode(
             "enemy out of melee",
@@ -119,7 +127,7 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "rend",
             {
-                NextAction("rend", ACTION_HIGH + 8)
+                NextAction("rend", rend)
             }
         )
     );
@@ -128,7 +136,7 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "rend on attacker",
             {
-                NextAction("rend on attacker", ACTION_HIGH + 8)
+                NextAction("rend on attacker", rend)
             }
         )
     );
@@ -137,7 +145,7 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "mortal strike",
             {
-                NextAction("mortal strike", ACTION_HIGH + 3)
+                NextAction("mortal strike", mortalStrike)
             }
         )
     );
@@ -146,7 +154,7 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "target critical health",
             {
-                NextAction("execute", ACTION_HIGH + 5)
+                NextAction("execute", execute)
             }
         )
     );
@@ -155,7 +163,7 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "sudden death",
             {
-                NextAction("execute", ACTION_HIGH + 5)
+                NextAction("execute", execute)
             }
         )
     );

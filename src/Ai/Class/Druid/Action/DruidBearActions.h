@@ -8,6 +8,7 @@
 #define PLAYERBOTS_DRUIDBEARACTIONS_H
 
 #include "GenericSpellActions.h"
+#include "PlayerbotEra.h"
 #include "ReachTargetActions.h"
 
 class PlayerbotAI;
@@ -59,7 +60,9 @@ public:
 class CastSwipeBearAction : public CastMeleeSpellAction
 {
 public:
-    CastSwipeBearAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "swipe (bear)") {}
+    // 1.12 names it plain "Swipe" (cats have none).
+    CastSwipeBearAction(PlayerbotAI* botAI)
+        : CastMeleeSpellAction(botAI, PlayerbotEra::IsVanilla() ? "swipe" : "swipe (bear)") {}
 };
 
 class CastLacerateAction : public CastMeleeSpellAction

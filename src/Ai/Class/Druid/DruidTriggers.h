@@ -50,6 +50,13 @@ public:
     ThornsOnMainTankTrigger(PlayerbotAI* botAI) : BuffOnMainTankTrigger(botAI, "thorns", false, 4 * IN_MILLISECONDS) {}
 };
 
+// 1.12: Omen of Clarity is a self-buff (10 minutes) rather than a passive talent.
+class OmenOfClarityTrigger : public BuffTrigger
+{
+public:
+    OmenOfClarityTrigger(PlayerbotAI* botAI) : BuffTrigger(botAI, "omen of clarity", 4 * IN_MILLISECONDS) {}
+};
+
 class ThornsTrigger : public BuffTrigger
 {
 public:

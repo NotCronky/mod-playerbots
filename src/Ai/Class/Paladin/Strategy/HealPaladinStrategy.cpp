@@ -5,6 +5,7 @@
  */
 
 #include "HealPaladinStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "Strategy.h"
 
@@ -21,6 +22,9 @@ std::vector<NextAction> HealPaladinStrategy::getDefaultActions()
 void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
+
+    // 1.12: Flash of Light is the efficient heal to spam (Illumination refunds crits); Holy Light for big deficits.
+    bool const vanilla = PlayerbotEra::IsVanilla();
 
     triggers.push_back(
         new TriggerNode(
@@ -85,8 +89,8 @@ void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "party member medium health",
             {
-                NextAction("holy light on party", ACTION_LIGHT_HEAL + 9),
-                NextAction("flash of light on party", ACTION_LIGHT_HEAL + 8)
+                NextAction("holy light on party", vanilla ? ACTION_LIGHT_HEAL + 8 : ACTION_LIGHT_HEAL + 9),
+                NextAction("flash of light on party", vanilla ? ACTION_LIGHT_HEAL + 9 : ACTION_LIGHT_HEAL + 8)
             }
         )
     );

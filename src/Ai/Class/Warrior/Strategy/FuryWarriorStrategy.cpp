@@ -6,6 +6,8 @@
 
 #include "FuryWarriorStrategy.h"
 
+#include "PlayerbotEra.h"
+
 class FuryWarriorStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:
@@ -78,6 +80,10 @@ std::vector<NextAction> FuryWarriorStrategy::getDefaultActions()
 void FuryWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
+
+    // 1.12: Execute comes before Bloodthirst and Whirlwind once the target is under 20%.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("target critical health", { NextAction("execute", ACTION_HIGH + 8) }));
 
     triggers.push_back(
         new TriggerNode(

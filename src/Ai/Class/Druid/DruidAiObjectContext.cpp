@@ -80,6 +80,7 @@ public:
     {
         creators["clearcasting"] = &DruidTriggerFactoryInternal::clearcasting;
         creators["thorns"] = &DruidTriggerFactoryInternal::thorns;
+        creators["omen of clarity"] = &DruidTriggerFactoryInternal::omen_of_clarity;
         creators["thorns on party"] = &DruidTriggerFactoryInternal::thorns_on_party;
         creators["thorns on main tank"] = &DruidTriggerFactoryInternal::thorns_on_main_tank;
         creators["bash"] = &DruidTriggerFactoryInternal::bash;
@@ -140,6 +141,7 @@ private:
     static Trigger* eclipse_solar(PlayerbotAI* botAI) { return new EclipseSolarTrigger(botAI); }
     static Trigger* eclipse_lunar(PlayerbotAI* botAI) { return new EclipseLunarTrigger(botAI); }
     static Trigger* thorns(PlayerbotAI* botAI) { return new ThornsTrigger(botAI); }
+    static Trigger* omen_of_clarity(PlayerbotAI* botAI) { return new OmenOfClarityTrigger(botAI); }
     static Trigger* thorns_on_party(PlayerbotAI* botAI) { return new ThornsOnPartyTrigger(botAI); }
     static Trigger* thorns_on_main_tank(PlayerbotAI* botAI) { return new ThornsOnMainTankTrigger(botAI); }
     static Trigger* bash(PlayerbotAI* botAI) { return new BashInterruptSpellTrigger(botAI); }
@@ -242,6 +244,7 @@ public:
         creators["survival instincts"] = &DruidAiObjectContextInternal::survival_instincts;
         creators["frenzied regeneration"] = &DruidAiObjectContextInternal::frenzied_regeneration;
         creators["thorns"] = &DruidAiObjectContextInternal::thorns;
+        creators["omen of clarity"] = &DruidAiObjectContextInternal::omen_of_clarity;
         creators["thorns on party"] = &DruidAiObjectContextInternal::thorns_on_party;
         creators["thorns on main tank"] = &DruidAiObjectContextInternal::thorns_on_main_tank;
         creators["lifebloom on main tank"] = &DruidAiObjectContextInternal::lifebloom_on_main_tank;
@@ -340,6 +343,7 @@ private:
     static Action* survival_instincts(PlayerbotAI* botAI) { return new CastSurvivalInstinctsAction(botAI); }
     static Action* frenzied_regeneration(PlayerbotAI* botAI) { return new CastFrenziedRegenerationAction(botAI); }
     static Action* thorns(PlayerbotAI* botAI) { return new CastThornsAction(botAI); }
+    static Action* omen_of_clarity(PlayerbotAI* botAI) { return new CastBuffSpellAction(botAI, "omen of clarity"); }
     static Action* thorns_on_party(PlayerbotAI* botAI) { return new CastThornsOnPartyAction(botAI); }
     static Action* thorns_on_main_tank(PlayerbotAI* botAI) { return new CastThornsOnMainTankAction(botAI); }
     static Action* lifebloom_on_main_tank(PlayerbotAI* botAI) { return new CastLifebloomOnMainTankAction(botAI); }

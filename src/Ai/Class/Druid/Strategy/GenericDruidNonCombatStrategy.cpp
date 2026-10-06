@@ -5,6 +5,7 @@
  */
 
 #include "GenericDruidNonCombatStrategy.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "Playerbots.h"
 
@@ -14,6 +15,7 @@ public:
     GenericDruidNonCombatStrategyActionNodeFactory()
     {
         creators["thorns"] = &thorns;
+        creators["omen of clarity"] = &omen_of_clarity;
         creators["thorns on party"] = &thorns_on_party;
         creators["mark of the wild"] = &mark_of_the_wild;
         creators["mark of the wild on party"] = &mark_of_the_wild_on_party;
@@ -29,6 +31,14 @@ private:
     static ActionNode* thorns([[maybe_unused]] PlayerbotAI* botAI)
     {
         return new ActionNode("thorns",
+                              /*P*/ { NextAction("caster form") },
+                              /*A*/ {},
+                              /*C*/ {});
+    }
+
+    static ActionNode* omen_of_clarity([[maybe_unused]] PlayerbotAI* botAI)
+    {
+        return new ActionNode("omen of clarity",
                               /*P*/ { NextAction("caster form") },
                               /*A*/ {},
                               /*C*/ {});
@@ -201,4 +211,7 @@ void GenericDruidBuffStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode("thorns", {
                        NextAction("thorns", 10.0f),
                        }));
+
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(new TriggerNode("omen of clarity", { NextAction("omen of clarity", 10.5f) }));
 }
