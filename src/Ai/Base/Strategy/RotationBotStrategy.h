@@ -14,7 +14,7 @@ class PlayerbotAI;
 
 // Fights with the bot's mod-rotation-bot profile (AiPlayerbot.UseRotationBot) in place of the class
 // strategies. Movement stays with the bot AI: melee bots close in, ranged bots keep their distance
-// and healers reach the member to heal. Its type carries the bot's role, which the class strategies
+// and healers reach the member to heal (they don't run from melee). Its type carries the bot's role, which the class strategies
 // it replaces would otherwise give.
 class RotationBotStrategy : public CombatStrategy
 {

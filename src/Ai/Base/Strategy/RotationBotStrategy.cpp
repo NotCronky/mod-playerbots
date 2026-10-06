@@ -28,9 +28,11 @@ uint32 RotationBotStrategy::GetType() const
 
 std::vector<NextAction> RotationBotStrategy::getDefaultActions()
 {
-    // The profile first; auto-attack or a wand when it has nothing ready.
+    // The profile comes before moving into range: it fails when nothing can be cast from here, and the moves
+    // run then. A healer would otherwise walk to its assist target while the group needs heals. Auto-attack or a
+    // wand when it has nothing ready.
     return {
-        NextAction("rotation", ACTION_NORMAL + 5),
+        NextAction("rotation", ACTION_MOVE - 1),
         NextAction(PlayerbotAI::IsRanged(botAI->GetBot(), true) ? "shoot" : "melee", ACTION_DEFAULT)
     };
 }
@@ -39,13 +41,15 @@ void RotationBotStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
 
+    // Healers stand and heal while the tank takes the enemy off them.
     Player* bot = botAI->GetBot();
-    if (PlayerbotAI::IsRanged(bot, true))
-        triggers.push_back(new TriggerNode("enemy too close for spell", { NextAction("flee", ACTION_MOVE + 4) }));
-    else
+    bool heal = PlayerbotAI::IsHeal(bot, true);
+    if (!PlayerbotAI::IsRanged(bot, true))
         triggers.push_back(new TriggerNode("enemy out of melee", { NextAction("reach melee", ACTION_HIGH + 1) }));
+    else if (!heal)
+        triggers.push_back(new TriggerNode("enemy too close for spell", { NextAction("flee", ACTION_MOVE + 4) }));
 
-    if (PlayerbotAI::IsHeal(bot, true))
+    if (heal)
         triggers.push_back(new TriggerNode("party member to heal out of spell range",
             { NextAction("reach party member to heal", ACTION_HIGH + 1) }));
 }
