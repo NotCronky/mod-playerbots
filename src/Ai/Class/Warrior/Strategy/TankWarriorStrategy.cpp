@@ -203,14 +203,18 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "shield block",
-            {
-                NextAction("shield block", vanilla ? ACTION_NORMAL + 2 : ACTION_INTERRUPT + 1)
-            }
-        )
-    );
+    // 1.12: Shield Block costs 10 rage that threat needs more; only when the tank is getting hurt.
+    if (vanilla)
+        triggers.push_back(new TriggerNode("medium health", { NextAction("shield block", ACTION_HIGH + 5) }));
+    else
+        triggers.push_back(
+            new TriggerNode(
+                "shield block",
+                {
+                    NextAction("shield block", ACTION_INTERRUPT + 1)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "revenge",

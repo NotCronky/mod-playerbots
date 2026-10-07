@@ -5,6 +5,7 @@
  */
 
 #include "GenericWarlockStrategy.h"
+#include "PlayerbotAI.h"
 #include "PlayerbotEra.h"
 
 GenericWarlockStrategy::GenericWarlockStrategy(PlayerbotAI* botAI) : CombatStrategy(botAI)
@@ -173,6 +174,13 @@ void WarlockCurseOfAgonyStrategy::InitTriggers(std::vector<TriggerNode*>& trigge
 // To disable, type "co -curse of elements"
 void WarlockCurseOfTheElementsStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    // Curse of the Elements comes at level 32; Curse of Agony until then, so the warlock curses at all.
+    if (!botAI->HasSpell("curse of the elements"))
+    {
+        WarlockCurseOfAgonyStrategy(botAI).InitTriggers(triggers);
+        return;
+    }
+
     triggers.push_back(
         new TriggerNode(
             "curse of the elements",
