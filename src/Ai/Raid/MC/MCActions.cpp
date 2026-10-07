@@ -112,6 +112,27 @@ bool McMoveFromLavaAction::Execute(Event /*event*/)
     return true;
 }
 
+bool McMajordomoLeaveCoalsAction::Execute(Event /*event*/)
+{
+    // Out to the nearer dry side. Tanks drag their adds out with them, and the damage dealers wait for that
+    // (the add exclusion in RaidMcStrategy) rather than follow them back in.
+    Position const east(MAJORDOMO_DRY_EAST_X, MAJORDOMO_DRY_EAST_Y, MAJORDOMO_DRY_EAST_Z);
+    Position const west(MAJORDOMO_DRY_WEST_X, MAJORDOMO_DRY_WEST_Y, MAJORDOMO_DRY_WEST_Z);
+    Position const& out = bot->GetExactDist2d(&east) < bot->GetExactDist2d(&west) ? east : west;
+
+    bot->CastStop();
+    if (!MoveTo(bot->GetMapId(), out.GetPositionX(), out.GetPositionY(), out.GetPositionZ(), false, false, false,
+                true, MovementPriority::MOVEMENT_FORCED))
+        return false;
+
+    // Hold the AI so rotation and facing actions can't cancel the run mid-pit, as the lava escape does.
+    constexpr uint32 MAX_ESCAPE_HOLD_MS = 2000;
+    float const speed = bot->GetSpeed(MOVE_RUN);
+    if (speed > 0.1f)
+        botAI->SetNextCheckDelay(std::min(MAX_ESCAPE_HOLD_MS, uint32(IN_MILLISECONDS * bot->GetExactDist2d(&out) / speed)));
+    return true;
+}
+
 bool McGolemaggBackOffAction::Execute(Event /*event*/)
 {
     Unit* boss = AI_VALUE2(Unit*, "find target", "golemagg the incinerator");

@@ -101,6 +101,11 @@ void RaidMcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode("mc core hound mark",
                         { NextAction("mc core hound mark", ACTION_RAID) }));
 
+    // Majordomo's lava pit of hot coals, where his Teleport drops raiders.
+    triggers.push_back(
+        new TriggerNode("mc majordomo in coals",
+                        { NextAction("mc majordomo leave coals", ACTION_RAID + 1) }));
+
     // Anywhere in MC: escaping a lava pool outranks everything else.
     triggers.push_back(
         new TriggerNode("mc in lava",
@@ -147,10 +152,12 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
             exclusions.insert(guid);
 
         // Majordomo's adds under a reflection shield: casters wait out Magic Reflection, melee damage dealers
-        // Damage Shield. The tanks keep hitting to hold them.
+        // Damage Shield. Melee also leave an add standing in his lava pit until a tank drags it out. The tanks
+        // keep hitting to hold them.
+        bool const melee = PlayerbotAI::IsMelee(botAI->GetBot());
         if (type == TargetValueExclusionType::Dps &&
             ((PlayerbotAI::IsCaster(botAI->GetBot()) && unit->HasAura(SPELL_MAGIC_REFLECTION)) ||
-             (PlayerbotAI::IsMelee(botAI->GetBot()) && unit->HasAura(SPELL_DAMAGE_REFLECTION))))
+             (melee && (unit->HasAura(SPELL_DAMAGE_REFLECTION) || InMajordomoCoals(unit)))))
             exclusions.insert(guid);
     }
 

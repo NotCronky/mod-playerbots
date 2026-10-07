@@ -36,6 +36,7 @@ public:
         creators["mc ragnaros fire resistance"] = &RaidMcTriggerContext::ragnaros_fire_resistance;
         creators["mc core hound mark"] = &RaidMcTriggerContext::core_hound_mark;
         creators["mc in lava"] = &RaidMcTriggerContext::in_lava;
+        creators["mc majordomo in coals"] = &RaidMcTriggerContext::majordomo_in_coals;
         creators["mc golemagg magma splash"] = &RaidMcTriggerContext::golemagg_magma_splash;
         creators["mc golemagg is healer"] = &RaidMcTriggerContext::golemagg_is_healer;
     }
@@ -61,6 +62,7 @@ private:
     static Trigger* ragnaros_fire_resistance(PlayerbotAI* botAI) { return new BossFireResistanceTrigger(botAI, "ragnaros"); }
     static Trigger* core_hound_mark(PlayerbotAI* botAI) { return new McCoreHoundMarkTrigger(botAI); }
     static Trigger* in_lava(PlayerbotAI* botAI) { return new McInLavaTrigger(botAI); }
+    static Trigger* majordomo_in_coals(PlayerbotAI* botAI) { return new McMajordomoInCoalsTrigger(botAI); }
     static Trigger* golemagg_magma_splash(PlayerbotAI* botAI) { return new McGolemaggMagmaSplashTrigger(botAI); }
     static Trigger* golemagg_is_healer(PlayerbotAI* botAI) { return new McGolemaggIsHealerTrigger(botAI); }
 };

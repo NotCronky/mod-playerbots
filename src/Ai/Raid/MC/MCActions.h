@@ -44,6 +44,14 @@ public:
     bool Execute(Event event) override;
 };
 
+class McMajordomoLeaveCoalsAction : public MovementAction
+{
+public:
+    McMajordomoLeaveCoalsAction(PlayerbotAI* botAI, std::string const name = "mc majordomo leave coals")
+        : MovementAction(botAI, name) {}
+    bool Execute(Event event) override;
+};
+
 class McGolemaggBackOffAction : public MovementAction
 {
 public:

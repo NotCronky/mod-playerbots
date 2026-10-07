@@ -96,6 +96,13 @@ public:
     bool IsActive() override;
 };
 
+class McMajordomoInCoalsTrigger : public Trigger
+{
+public:
+    McMajordomoInCoalsTrigger(PlayerbotAI* botAI) : Trigger(botAI, "mc majordomo in coals") {}
+    bool IsActive() override;
+};
+
 class McGolemaggMagmaSplashTrigger : public Trigger
 {
 public:
