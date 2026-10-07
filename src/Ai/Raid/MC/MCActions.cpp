@@ -16,6 +16,12 @@ static constexpr float INFERNO_DISTANCE = 20.0f;
 // dedicated tank positions; prevents assist tanks from positioning Core Ragers on steep walls on pull
 static const Position GOLEMAGG_TANK_POSITION{795.7308, -994.8848, -207.18661};
 static const Position CORE_RAGER_TANK_POSITION{846.6453, -1019.0639, -198.9819};
+// Garr's spawn. A banished Firesworn stays where it was banished, and one more than 40yd from Garr takes Separation
+// Anxiety (+300% damage, banish immunity), so the main tank keeps him home (tr-20261007-170607-1: tanked at the
+// raid's camp 45yd east, the Firesworn hit for 5-7k).
+static const Position GARR_TANK_POSITION{691.0f, -498.4f, -214.3f};
+static constexpr float GARR_TANK_POSITION_TOLERANCE = 6.0f;
+static constexpr float TANK_STEP_DISTANCE = 3.0f;
 
 // Midpoint of the two tank camps (56y apart): healers standing here reach both
 static const Position GOLEMAGG_HEALER_POSITION{821.2f, -1007.0f, -203.0f};
@@ -224,7 +230,15 @@ bool McGarrMainTankAction::Execute(Event event)
     if (garr->GetVictim() != bot)
         return botAI->DoSpecificAction("taunt spell", event, true);
 
-    return false;
+    // Step him back home, a few yards at a time so he stays in melee.
+    float const dX = GARR_TANK_POSITION.GetPositionX() - bot->GetPositionX();
+    float const dY = GARR_TANK_POSITION.GetPositionY() - bot->GetPositionY();
+    float const dist = std::sqrt(dX * dX + dY * dY);
+    if (dist <= GARR_TANK_POSITION_TOLERANCE)
+        return false;
+    float const step = std::min(TANK_STEP_DISTANCE, dist);
+    return MoveTo(bot->GetMapId(), bot->GetPositionX() + dX / dist * step, bot->GetPositionY() + dY / dist * step,
+                  bot->GetPositionZ(), false, false, false, false, MovementPriority::MOVEMENT_COMBAT, true, true);
 }
 
 bool McGarrBanishFireswornAction::Execute(Event /*event*/)
