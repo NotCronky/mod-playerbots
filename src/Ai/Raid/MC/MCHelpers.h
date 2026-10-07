@@ -32,6 +32,10 @@ enum MoltenCoreSpells
     // Golemagg
     SPELL_GOLEMAGGS_TRUST = 20553,
     SPELL_MAGMA_SPLASH = 13880,
+
+    // Majordomo Executus: every 30s one of these lands on all his adds for 10s.
+    SPELL_MAGIC_REFLECTION = 20619,     // reflects half of the spells cast at them
+    SPELL_DAMAGE_REFLECTION = 21075,    // Damage Shield: fire damage back at each melee hit
 };
 
 // Garr: each warlock keeps one Firesworn banished, refreshed under this much time left.

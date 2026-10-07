@@ -145,6 +145,13 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
 
         if ((golemaggAlive && unit->GetEntry() == NPC_CORE_RAGER) || unit->GetEntry() == NPC_MAJORDOMO_EXECUTUS)
             exclusions.insert(guid);
+
+        // Majordomo's adds under a reflection shield: casters wait out Magic Reflection, melee damage dealers
+        // Damage Shield. The tanks keep hitting to hold them.
+        if (type == TargetValueExclusionType::Dps &&
+            ((PlayerbotAI::IsCaster(botAI->GetBot()) && unit->HasAura(SPELL_MAGIC_REFLECTION)) ||
+             (PlayerbotAI::IsMelee(botAI->GetBot()) && unit->HasAura(SPELL_DAMAGE_REFLECTION))))
+            exclusions.insert(guid);
     }
 
     // Garr: the free Firesworn die first, one at a time (each death erupts and gives Garr a Frenzy stack, but loose
