@@ -73,7 +73,13 @@ BUFF_ACTION(CastSweepingStrikesAction, "sweeping strikes");
 MELEE_ACTION(CastBladestormAction, "bladestorm");
 
 // fury
-MELEE_ACTION(CastCleaveAction, "cleave");
+class CastCleaveAction : public CastMeleeSpellAction
+{
+public:
+    CastCleaveAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "cleave") {}
+
+    bool isUseful() override;
+};
 MELEE_ACTION(CastExecuteAction, "execute");
 REACH_ACTION(CastInterceptAction, "intercept", 8.0f);
 ENEMY_HEALER_ACTION(CastInterceptOnEnemyHealerAction, "intercept");
@@ -106,16 +112,26 @@ DEBUFF_ACTION_R(CastPiercingHowlAction, "piercing howl", 8.0f);
 BUFF_ACTION(CastRampageAction, "rampage");
 
 // protection
-MELEE_ACTION_U(CastTauntAction, "taunt", GetTarget() && GetTarget()->GetTarget() != bot->GetGUID());
+class CastTauntAction : public CastMeleeSpellAction
+{
+public:
+    CastTauntAction(PlayerbotAI* botAI) : CastMeleeSpellAction(botAI, "taunt") {}
+
+    bool isUseful() override;
+};
 SNARE_ACTION(CastTauntOnSnareTargetAction, "taunt");
 BUFF_ACTION(CastBloodrageAction, "bloodrage");
 MELEE_ACTION(CastShieldBashAction, "shield bash");
 ENEMY_HEALER_ACTION(CastShieldBashOnEnemyHealerAction, "shield bash");
 MELEE_ACTION(CastRevengeAction, "revenge");
 BUFF_ACTION(CastShieldBlockAction, "shield block");
-DEBUFF_ACTION_U(CastDisarmAction, "disarm",
-                GetTarget() && GetTarget()->IsPlayer() ? !botAI->IsRanged((Player*)GetTarget())
-                                                       : CastDebuffSpellAction::isUseful());
+class CastDisarmAction : public CastDebuffSpellAction
+{
+public:
+    CastDisarmAction(PlayerbotAI* botAI) : CastDebuffSpellAction(botAI, "disarm") {}
+
+    bool isUseful() override;
+};
 DEBUFF_ENEMY_ACTION(CastDisarmOnAttackerAction, "disarm");
 BUFF_ACTION(CastShieldWallAction, "shield wall");
 // protection 2.4.3

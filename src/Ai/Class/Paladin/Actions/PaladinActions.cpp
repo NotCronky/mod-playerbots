@@ -10,6 +10,7 @@
 #include "GenericBuffUtils.h"
 #include "PaladinGreaterBlessingAction.h"
 #include "PaladinHelper.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
 
@@ -602,4 +603,21 @@ bool CastCancelDivineSacrificeAction::Execute(Event /*event*/)
 bool CastCancelDivineSacrificeAction::isUseful()
 {
     return botAI->HasAura("divine sacrifice", GetTarget(), false, true, -1, true);
+}
+
+bool CastJudgementAction::isUseful()
+{
+    // 1.12 Judgement reaches 10 yards and spends the seal, which costs about as much again to put back: a damage
+    // dealer judges while it has the mana for both; a tank, whose threat it is, always.
+    if (PlayerbotEra::IsVanilla())
+    {
+        Unit* target = GetTarget();
+        if (!target || !bot->IsWithinCombatRange(target, 10.0f))
+            return false;
+
+        if (!botAI->IsTank(bot) && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana)
+            return false;
+    }
+
+    return CastSpellAction::isUseful();
 }

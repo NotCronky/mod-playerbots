@@ -223,14 +223,16 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "disarm",
-            {
-                NextAction("disarm", ACTION_HIGH + 1)
-            }
-        )
-    );
+    // 1.12: Disarm costs 20 rage and Rend 10 for little threat (and undead shrug Rend off): Sunder Armor gets it.
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "disarm",
+                {
+                    NextAction("disarm", ACTION_HIGH + 1)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "lose aggro",
@@ -320,22 +322,25 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "rend",
-            {
-                NextAction("rend", ACTION_NORMAL + 1)
-            }
-        )
-    );
-    triggers.push_back(
-        new TriggerNode(
-        "rend on attacker",
-            {
-                NextAction("rend on attacker", ACTION_NORMAL + 1)
-            }
-        )
-    );
+    if (!vanilla)
+    {
+        triggers.push_back(
+            new TriggerNode(
+                "rend",
+                {
+                    NextAction("rend", ACTION_NORMAL + 1)
+                }
+            )
+        );
+        triggers.push_back(
+            new TriggerNode(
+            "rend on attacker",
+                {
+                    NextAction("rend on attacker", ACTION_NORMAL + 1)
+                }
+            )
+        );
+    }
     triggers.push_back(
         new TriggerNode(
             "protect party member",

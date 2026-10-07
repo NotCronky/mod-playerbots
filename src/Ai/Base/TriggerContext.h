@@ -101,6 +101,8 @@ public:
         creators["light aoe"] = &TriggerContext::LightAoe;
         creators["medium aoe"] = &TriggerContext::MediumAoe;
         creators["high aoe"] = &TriggerContext::HighAoe;
+        creators["medium aoe with mana"] = &TriggerContext::MediumAoeWithMana;
+        creators["high aoe with mana"] = &TriggerContext::HighAoeWithMana;
 
         creators["healer should attack"] = &TriggerContext::healer_should_attack;
         creators["medium aoe and healer should attack"] = &TriggerContext::medium_aoe_and_healer_should_attack;
@@ -309,6 +311,8 @@ private:
     static Trigger* LightAoe(PlayerbotAI* botAI) { return new LightAoeTrigger(botAI); }
     static Trigger* MediumAoe(PlayerbotAI* botAI) { return new MediumAoeTrigger(botAI); }
     static Trigger* HighAoe(PlayerbotAI* botAI) { return new HighAoeTrigger(botAI); }
+    static Trigger* MediumAoeWithMana(PlayerbotAI* botAI) { return new AoeWithManaTrigger(botAI, 3, false); }
+    static Trigger* HighAoeWithMana(PlayerbotAI* botAI) { return new AoeWithManaTrigger(botAI, 4, true); }
     static Trigger* healer_should_attack(PlayerbotAI* botAI) { return new HealerShouldAttackTrigger(botAI); }
     static Trigger* medium_aoe_and_healer_should_attack(PlayerbotAI* botAI) { return new TwoTriggers(botAI, "medium aoe", "healer should attack"); }
     static Trigger* HasAreaDebuff(PlayerbotAI* botAI) { return new HasAreaDebuffTrigger(botAI); }

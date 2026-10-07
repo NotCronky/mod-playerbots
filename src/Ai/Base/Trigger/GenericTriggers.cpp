@@ -251,6 +251,13 @@ bool AoeTrigger::IsActive()
     return attackers_count >= amount;
 }
 
+bool AoeWithManaTrigger::IsActive()
+{
+    uint32 const minMana = highMana ? sPlayerbotAIConfig.highMana : sPlayerbotAIConfig.mediumMana;
+    return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") > minMana &&
+           AoeTrigger::IsActive();
+}
+
 bool NoFoodTrigger::IsActive()
 {
     bool isRandomBot = sRandomPlayerbotMgr.IsRandomBot(bot);

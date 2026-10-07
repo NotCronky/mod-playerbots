@@ -5,6 +5,8 @@
  */
 
 #include "GenericWarriorStrategy.h"
+
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 class GenericWarriorStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -57,6 +59,17 @@ WarriorAoeStrategy::WarriorAoeStrategy(PlayerbotAI* botAI) : CombatStrategy(botA
 
 void WarriorAoeStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    // 1.12: Thunder Clap is Battle Stance only, and Demoralizing Shout waits behind the rage the threat and damage
+    // abilities need; Cleave checks its own rage.
+    if (PlayerbotEra::IsVanilla())
+    {
+        triggers.push_back(new TriggerNode(
+            "light aoe", { NextAction("sweeping strikes", ACTION_HIGH + 7),
+                           NextAction("cleave", ACTION_HIGH),
+                           NextAction("demoralizing shout without life time check", ACTION_NORMAL + 2) }));
+        return;
+    }
+
     triggers.push_back(new TriggerNode(
         "light aoe", { NextAction("sweeping strikes", ACTION_HIGH + 7),
                                        NextAction("bladestorm", ACTION_HIGH + 6),

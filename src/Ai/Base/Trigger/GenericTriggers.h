@@ -307,6 +307,20 @@ public:
     HighAoeTrigger(PlayerbotAI* botAI) : AoeTrigger(botAI, 4, 8.0f) {}
 };
 
+// A pack big enough for an AoE spell while the caster's mana is above the medium (or, highMana, the high) mana
+// level: a 1.12 Blizzard or Flamestrike is a fifth of a caster's mana and runs it dry within a few packs.
+class AoeWithManaTrigger : public AoeTrigger
+{
+public:
+    AoeWithManaTrigger(PlayerbotAI* botAI, int32 amount, bool highMana)
+        : AoeTrigger(botAI, amount, 8.0f), highMana(highMana) {}
+
+    bool IsActive() override;
+
+private:
+    bool highMana;
+};
+
 class BuffTrigger : public SpellTrigger
 {
 public:

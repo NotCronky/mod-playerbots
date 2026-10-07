@@ -7,6 +7,7 @@
 #include "ThreatStrategy.h"
 #include "GenericSpellActions.h"
 #include "Map.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 float ThreatMultiplier::GetValue(Action* action)
@@ -20,6 +21,10 @@ float ThreatMultiplier::GetValue(Action* action)
         return 1.0f;
 
     if (!AI_VALUE(bool, "group"))
+        return 1.0f;
+
+    // 1.12: escapes, interrupts and emergencies (Frost Nova, Blink, Kick, Death Coil) go ahead whatever the threat.
+    if (PlayerbotEra::IsVanilla() && action->getRelevance() >= ACTION_MOVE)
         return 1.0f;
 
     if (action->getThreatType() == Action::ActionThreatType::Aoe)

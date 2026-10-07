@@ -183,6 +183,9 @@ bool Engine::DoNextAction(Unit* /*unit*/, uint32 /*depth*/, bool minimal)
         }
         else if (action->isUseful())
         {
+            // Multipliers may read the relevance the action was queued with.
+            action->setRelevance(relevance);
+
             // Apply multipliers early to avoid unnecessary iterations
             for (Multiplier* multiplier : multipliers)
             {

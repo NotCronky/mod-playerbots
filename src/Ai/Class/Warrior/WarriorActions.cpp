@@ -6,6 +6,7 @@
 
 #include "WarriorActions.h"
 #include "AiFactory.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 namespace
@@ -231,4 +232,43 @@ bool CastShatteringThrowAction::isPossible()
 
     // If the minimal checks above pass, simply return true.
     return true;
+}
+
+bool CastCleaveAction::isUseful()
+{
+    // 1.12: Cleave spends 20 rage on the next swing. A tank keeps that rage for Sunder Armor, Revenge and Shield Slam
+    // until it has plenty; anyone else until the swing will not starve the rest of the rotation.
+    if (PlayerbotEra::IsVanilla() && AI_VALUE2(uint8, "rage", "self target") < (botAI->IsTank(bot) ? 50 : 30))
+        return false;
+
+    return CastMeleeSpellAction::isUseful();
+}
+
+bool CastTauntAction::isUseful()
+{
+    Unit* target = GetTarget();
+    if (!target || target->GetTarget() == bot->GetGUID())
+        return false;
+
+    // 1.12 Taunt is melee range (30 yards from 3.0): out of reach, the tank closes in first.
+    if (PlayerbotEra::IsVanilla())
+        return CastMeleeSpellAction::isUseful();
+
+    return true;
+}
+
+bool CastDisarmAction::isUseful()
+{
+    Unit* target = GetTarget();
+    if (!target)
+        return false;
+
+    if (target->IsPlayer())
+        return !botAI->IsRanged(target->ToPlayer());
+
+    // 1.12 Disarm is melee range.
+    if (PlayerbotEra::IsVanilla() && !bot->IsWithinMeleeRange(target))
+        return false;
+
+    return CastDebuffSpellAction::isUseful();
 }

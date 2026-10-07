@@ -8,6 +8,7 @@
 #include "Event.h"
 #include "GenericSpellActions.h"
 #include "PlayerbotAI.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 bool CastViperStingAction::isUseful()
@@ -108,4 +109,26 @@ bool CastWingClipAction::isUseful()
 std::vector<NextAction> CastWingClipAction::getPrerequisites()
 {
     return {};
+}
+
+// 1.12 hunters have no Aspect of the Viper and Serpent Sting costs a twentieth of their mana: sting only targets that
+// live through it, and not below medium mana, which the shots need.
+bool CastSerpentStingAction::isUseful()
+{
+    if (PlayerbotEra::IsVanilla())
+        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.mediumMana &&
+               CastDebuffSpellAction::isUseful();
+
+    // Bypass TTL check
+    return CastAuraSpellAction::isUseful();
+}
+
+bool CastSerpentStingOnAttackerAction::isUseful()
+{
+    if (PlayerbotEra::IsVanilla())
+        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.mediumMana &&
+               CastDebuffSpellOnAttackerAction::isUseful();
+
+    // Bypass TTL check
+    return CastAuraSpellAction::isUseful();
 }

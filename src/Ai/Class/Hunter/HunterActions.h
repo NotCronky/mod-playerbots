@@ -320,11 +320,7 @@ class CastSerpentStingAction : public CastDebuffSpellAction
 public:
     CastSerpentStingAction(PlayerbotAI* botAI) :
         CastDebuffSpellAction(botAI, "serpent sting", true) {}
-    bool isUseful() override
-    {
-        // Bypass TTL check
-        return CastAuraSpellAction::isUseful();
-    }
+    bool isUseful() override;
 };
 
 class CastScorpidStingAction : public CastDebuffSpellAction
@@ -344,11 +340,7 @@ class CastSerpentStingOnAttackerAction : public CastDebuffSpellOnAttackerAction
 public:
     CastSerpentStingOnAttackerAction(PlayerbotAI* botAI)
         : CastDebuffSpellOnAttackerAction(botAI, "serpent sting", true) {}
-    bool isUseful() override
-    {
-        // Bypass TTL check
-        return CastAuraSpellAction::isUseful();
-    }
+    bool isUseful() override;
 };
 
 class CastImmolationTrapAction : public CastSpellAction

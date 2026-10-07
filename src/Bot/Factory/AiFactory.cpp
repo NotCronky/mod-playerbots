@@ -421,6 +421,11 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     if (PlayerbotAI::IsMelee(player, true) && PlayerbotAI::IsDps(player, true))
         engine->addStrategy("behind", false);
 
+    // 1.12 tanks build a fraction of Wrath's threat: damage dealers hold back near the tank's threat instead of
+    // pulling the mob and spending their mana escaping it.
+    if (PlayerbotEra::IsVanilla() && PlayerbotAI::IsDps(player, true) && !rotation)
+        engine->addStrategy("threat", false);
+
     if (PlayerbotAI::IsHeal(player, true) && !rotation)
     {
         if (sPlayerbotAIConfig.autoSaveMana)

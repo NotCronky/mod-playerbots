@@ -20,7 +20,13 @@ BUFF_ACTION(CastSealOfVengeanceAction, "seal of vengeance");
 BUFF_ACTION(CastSealOfCorruptionAction, "seal of corruption");
 
 // judgements
-SPELL_ACTION(CastJudgementAction, "judgement");
+class CastJudgementAction : public CastSpellAction
+{
+public:
+    CastJudgementAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "judgement") {}
+
+    bool isUseful() override;
+};
 
 SPELL_ACTION(CastJudgementOfLightAction, "judgement of light");
 SPELL_ACTION(CastJudgementOfWisdomAction, "judgement of wisdom");
