@@ -191,6 +191,59 @@ bool McGolemaggTankAction::FindCoreRagers(Unit*& coreRager1, Unit*& coreRager2) 
     return coreRager1 != nullptr && coreRager2 != nullptr;
 }
 
+bool McGarrMainTankAction::Execute(Event event)
+{
+    Unit* garr = AI_VALUE2(Unit*, "find target", "garr");
+    if (!garr)
+        return false;
+
+    if (bot->GetVictim() != garr)
+        return Attack(garr);
+
+    if (garr->GetVictim() != bot)
+        return botAI->DoSpecificAction("taunt spell", event, true);
+
+    return false;
+}
+
+bool McGarrAssistTankAction::Execute(Event event)
+{
+    // A Firesworn already on this tank stays there.
+    Unit* victim = bot->GetVictim();
+    if (victim && victim->IsAlive() && victim->GetEntry() == NPC_FIRESWORN && victim->GetVictim() == bot)
+        return false;
+
+    // Otherwise the nearest Firesworn that is hitting someone who is not a tank.
+    Unit* loose = nullptr;
+    float looseDistance = 0.0f;
+    for (ObjectGuid const guid : AI_VALUE(GuidVector, "attackers"))
+    {
+        Unit* unit = botAI->GetUnit(guid);
+        if (!unit || !unit->IsAlive() || unit->GetEntry() != NPC_FIRESWORN)
+            continue;
+
+        Unit* addVictim = unit->GetVictim();
+        Player* addVictimPlayer = addVictim ? addVictim->ToPlayer() : nullptr;
+        if (addVictimPlayer && PlayerbotAI::IsTank(addVictimPlayer))
+            continue;
+
+        float const distance = bot->GetDistance(unit);
+        if (!loose || distance < looseDistance)
+        {
+            loose = unit;
+            looseDistance = distance;
+        }
+    }
+
+    if (!loose)
+        return false;
+
+    if (bot->GetVictim() != loose)
+        return Attack(loose);
+
+    return botAI->DoSpecificAction("taunt spell", event, true);
+}
+
 bool McGolemaggMainTankAttackGolemaggAction::Execute(Event /*event*/)
 {
     // At this point, we know we are not the last living tank in the group.

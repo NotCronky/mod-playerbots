@@ -5,6 +5,7 @@
  */
 
 #include "DruidShapeshiftActions.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 bool CastBearFormAction::isUseful()
@@ -39,9 +40,16 @@ bool CastCasterFormAction::Execute(Event /*event*/)
 
 bool CastCasterFormAction::isUseful()
 {
-    return botAI->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form",
-                               "flight form", "swift flight form", "moonkin form", nullptr) &&
-           AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.mediumHealth;
+    if (!botAI->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form",
+                             "flight form", "swift flight form", "moonkin form", nullptr))
+        return false;
+
+    // 1.12 forms block Innervate, Rebirth and the cures outright, so the druid leaves the form whatever its mana:
+    // that is when Innervate matters most.
+    if (PlayerbotEra::IsVanilla())
+        return true;
+
+    return AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.mediumHealth;
 }
 
 bool CastCancelDruidAction::Execute(Event /*event*/)

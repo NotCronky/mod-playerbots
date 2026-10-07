@@ -27,6 +27,8 @@ public:
         creators["mc shazzrah move away"] = &RaidMcActionContext::shazzrah_move_away;
         creators["mc sulfuron harbinger fire resistance"] = &RaidMcActionContext::sulfuron_harbinger_fire_resistance;
         creators["mc golemagg fire resistance"] = &RaidMcActionContext::golemagg_fire_resistance;
+        creators["mc garr main tank attack garr"] = &RaidMcActionContext::garr_main_tank_attack_garr;
+        creators["mc garr assist tank attack firesworn"] = &RaidMcActionContext::garr_assist_tank_attack_firesworn;
         creators["mc golemagg mark boss"] = &RaidMcActionContext::golemagg_mark_boss;
         creators["mc golemagg main tank attack golemagg"] = &RaidMcActionContext::golemagg_main_tank_attack_golemagg;
         creators["mc golemagg assist tank attack core rager"] = &RaidMcActionContext::golemagg_assist_tank_attack_core_rager;
@@ -49,6 +51,8 @@ private:
     static Action* shazzrah_move_away(PlayerbotAI* botAI) { return new McShazzrahMoveAwayAction(botAI); }
     static Action* sulfuron_harbinger_fire_resistance(PlayerbotAI* botAI) { return new BossFireResistanceAction(botAI, "sulfuron harbinger"); }
     static Action* golemagg_fire_resistance(PlayerbotAI* botAI) { return new BossFireResistanceAction(botAI, "golemagg the incinerator"); }
+    static Action* garr_main_tank_attack_garr(PlayerbotAI* botAI) { return new McGarrMainTankAction(botAI); }
+    static Action* garr_assist_tank_attack_firesworn(PlayerbotAI* botAI) { return new McGarrAssistTankAction(botAI); }
     static Action* golemagg_mark_boss(PlayerbotAI* botAI) { return new McGolemaggMarkBossAction(botAI); }
     static Action* golemagg_main_tank_attack_golemagg(PlayerbotAI* botAI) { return new McGolemaggMainTankAttackGolemaggAction(botAI); }
     static Action* golemagg_assist_tank_attack_core_rager(PlayerbotAI* botAI) { return new McGolemaggAssistTankAttackCoreRagerAction(botAI); }

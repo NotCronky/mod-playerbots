@@ -34,6 +34,12 @@ void RaidMcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(
         new TriggerNode("mc garr fire resistance",
                         { NextAction("mc garr fire resistance", ACTION_RAID) }));
+    triggers.push_back(
+        new TriggerNode("mc garr is main tank",
+                        { NextAction("mc garr main tank attack garr", ACTION_RAID) }));
+    triggers.push_back(
+        new TriggerNode("mc garr is assist tank",
+                        { NextAction("mc garr assist tank attack firesworn", ACTION_RAID) }));
 
     // Baron Geddon
     triggers.push_back(
@@ -116,13 +122,23 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
     // through their own target selection.
     AiObjectContext* context = botAI->GetAiObjectContext();
     bool const golemaggAlive = AI_VALUE2(Unit*, "find target", "golemagg the incinerator") != nullptr;
+    Unit* garr = AI_VALUE2(Unit*, "find target", "garr");
+    bool fireswornAlive = false;
     for (ObjectGuid const guid : AI_VALUE(GuidVector, "attackers"))
     {
         Unit* unit = botAI->GetUnit(guid);
         if (!unit)
             continue;
 
+        if (unit->GetEntry() == NPC_FIRESWORN && unit->IsAlive())
+            fireswornAlive = true;
+
         if ((golemaggAlive && unit->GetEntry() == NPC_CORE_RAGER) || unit->GetEntry() == NPC_MAJORDOMO_EXECUTUS)
             exclusions.insert(guid);
     }
+
+    // Garr: the Firesworn die first, one at a time (each death erupts and gives Garr a Frenzy stack, but loose adds
+    // kill the healers); damage dealers leave Garr to the main tank until they are dead.
+    if (garr && fireswornAlive && type == TargetValueExclusionType::Dps)
+        exclusions.insert(garr->GetGUID());
 }

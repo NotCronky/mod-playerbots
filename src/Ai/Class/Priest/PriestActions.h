@@ -96,7 +96,14 @@ public:
 };
 AOE_HEAL_ACTION(CastLightwellAction, "lightwell", 15.0f, HealingManaEfficiency::MEDIUM);
 
-SPELL_ACTION(CastSmiteAction, "smite");
+class CastSmiteAction : public CastSpellAction
+{
+public:
+    CastSmiteAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "smite") {}
+
+    // Holy spells cannot be cast in Shadowform.
+    bool isUseful() override { return !botAI->HasAura("shadowform", bot) && CastSpellAction::isUseful(); }
+};
 SPELL_ACTION(CastHolyNovaAction, "holy nova");
 
 RESS_ACTION(CastResurrectionAction, "resurrection");
@@ -139,7 +146,13 @@ public:
 };
 
 // shadow talents
-SPELL_ACTION(CastMindFlayAction, "mind flay");
+class CastMindFlayAction : public CastSpellAction
+{
+public:
+    CastMindFlayAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "mind flay") {}
+
+    std::vector<NextAction> getPrerequisites() override;
+};
 BUFF_ACTION(CastVampiricEmbraceAction, "vampiric embrace");
 DEBUFF_ACTION(CastVampiricEmbraceOnTargetAction, "vampiric embrace");
 BUFF_ACTION(CastShadowformAction, "shadowform");

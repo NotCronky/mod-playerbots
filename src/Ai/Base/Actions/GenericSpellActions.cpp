@@ -14,6 +14,7 @@
 #include "Opcodes.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 #include "WorldPacket.h"
@@ -375,6 +376,63 @@ CastHealingSpellAction::CastHealingSpellAction(PlayerbotAI* botAI, std::string c
 }
 
 bool CastHealingSpellAction::isUseful() { return CastAuraSpellAction::isUseful(); }
+
+namespace
+{
+    // What one cast of a direct heal rank restores: its base amount plus the caster's +healing scaled by cast time
+    // (the 1.12 coefficient, at most 3.5 seconds' worth).
+    float EstimatedHeal(Player* bot, SpellInfo const* info)
+    {
+        float amount = 0.0f;
+        for (SpellEffectInfo const& effect : info->GetEffects())
+            if (effect.Effect == SPELL_EFFECT_HEAL)
+                amount += effect.CalcValue(bot);
+
+        float const castTime = std::min<float>(info->CalcCastTime(), 3500.0f);
+        return amount + bot->SpellBaseHealingBonusDone(info->GetSchoolMask()) * castTime / 3500.0f;
+    }
+
+    // 1.12 healers live on downranking: the lowest known rank that covers the target's missing health, the
+    // highest when none does. Heals over time, group heals and anything without a direct heal keep their rank.
+    uint32 DownrankedHeal(Player* bot, uint32 spellId, Unit* target)
+    {
+        SpellInfo const* top = sSpellMgr->GetSpellInfo(spellId);
+        if (!top || !target || !top->HasEffect(SPELL_EFFECT_HEAL) || top->IsAffectingArea())
+            return spellId;
+
+        float const missing = float(target->GetMaxHealth() - target->GetHealth());
+        if (missing <= 0.0f)
+            return spellId;
+
+        for (uint32 rank = sSpellMgr->GetFirstSpellInChain(spellId); rank && rank != spellId;
+             rank = sSpellMgr->GetNextSpellInChain(rank))
+        {
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(rank);
+            if (info && bot->HasSpell(rank) && EstimatedHeal(bot, info) >= missing)
+                return rank;
+        }
+
+        return spellId;
+    }
+}
+
+bool CastHealingSpellAction::Execute(Event event)
+{
+    if (!PlayerbotEra::IsVanilla())
+        return CastAuraSpellAction::Execute(event);
+
+    Unit* target = GetTarget();
+    uint32 const spellId = AI_VALUE2(uint32, "spell id", spell);
+    uint32 const rank = DownrankedHeal(bot, spellId, target);
+    if (rank == spellId)
+        return CastAuraSpellAction::Execute(event);
+
+    if (!botAI->CastSpell(rank, target))
+        return false;
+
+    context->GetValue<time_t>("last spell cast time", spell)->Set(time(nullptr));
+    return true;
+}
 
 bool CastAoeHealSpellAction::isUseful() { return CastSpellAction::isUseful(); }
 

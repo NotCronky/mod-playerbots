@@ -60,6 +60,24 @@ public:
     bool Execute(Event event) override;
 };
 
+// Garr: the main tank holds Garr; each assist tank picks up a Firesworn that is loose on someone else, so the adds
+// stay on tanks while the damage dealers kill them one at a time (Garr is left out of their targets until then).
+class McGarrMainTankAction : public AttackAction
+{
+public:
+    McGarrMainTankAction(PlayerbotAI* botAI, std::string const name = "mc garr main tank attack garr")
+        : AttackAction(botAI, name) {}
+    bool Execute(Event event) override;
+};
+
+class McGarrAssistTankAction : public AttackAction
+{
+public:
+    McGarrAssistTankAction(PlayerbotAI* botAI, std::string const name = "mc garr assist tank attack firesworn")
+        : AttackAction(botAI, name) {}
+    bool Execute(Event event) override;
+};
+
 class McGolemaggTankAction : public AttackAction
 {
 public:

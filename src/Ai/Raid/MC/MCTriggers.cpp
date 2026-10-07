@@ -66,6 +66,16 @@ bool McGolemaggMagmaSplashTrigger::IsActive()
     return bot->GetDistance2d(boss) < MAGMA_SPLASH_BACK_OFF_DISTANCE;
 }
 
+bool McGarrIsMainTankTrigger::IsActive()
+{
+    return PlayerbotAI::IsMainTank(bot) && AI_VALUE2(Unit*, "find target", "garr");
+}
+
+bool McGarrIsAssistTankTrigger::IsActive()
+{
+    return PlayerbotAI::IsAssistTank(bot) && AI_VALUE2(Unit*, "find target", "garr");
+}
+
 bool McGolemaggMarkBossTrigger::IsActive()
 {
     // any tank may mark the boss

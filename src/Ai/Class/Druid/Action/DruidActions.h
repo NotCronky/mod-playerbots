@@ -265,6 +265,8 @@ class CastBarkskinAction : public CastBuffSpellAction
 {
 public:
     CastBarkskinAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "barkskin") {}
+
+    bool isUseful() override;
 };
 
 class CastInnervateAction : public CastSpellAction
@@ -273,6 +275,7 @@ public:
     CastInnervateAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "innervate") {}
 
     std::string const GetTargetName() override { return "self target"; }
+    std::vector<NextAction> getPrerequisites() override;
 };
 
 class CastInnervateOnHealerAction : public CastSpellAction
@@ -328,6 +331,9 @@ class CastDruidRemoveCurseOnPartyAction : public CurePartyMemberAction
 {
 public:
     CastDruidRemoveCurseOnPartyAction(PlayerbotAI* ai) : CurePartyMemberAction(ai, "remove curse", DISPEL_CURSE) {}
+
+    bool isUseful() override;
+    std::vector<NextAction> getPrerequisites() override;
 };
 
 class CastInsectSwarmOnAttackerAction : public CastDebuffSpellOnAttackerAction

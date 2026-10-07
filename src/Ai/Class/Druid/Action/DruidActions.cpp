@@ -7,6 +7,7 @@
 #include "DruidActions.h"
 #include "AoeValues.h"
 #include "Event.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 #include "TargetValue.h"
@@ -316,4 +317,39 @@ Unit* CastWildGrowthBlanketAction::GetTarget()
 bool CastWildGrowthBlanketAction::isUseful()
 {
     return GetTarget() != nullptr;
+}
+
+bool CastBarkskinAction::isUseful()
+{
+    // 1.12 Barkskin cannot be cast in an animal form; a bear or cat does not leave it for this.
+    if (PlayerbotEra::IsVanilla() && bot->GetShapeshiftForm() != FORM_NONE && bot->GetShapeshiftForm() != FORM_MOONKIN)
+        return false;
+
+    return CastBuffSpellAction::isUseful();
+}
+
+// 1.12: Innervate and Remove Curse cannot be cast in Moonkin, Cat or Bear Form.
+std::vector<NextAction> CastInnervateAction::getPrerequisites()
+{
+    if (PlayerbotEra::IsVanilla())
+        return { NextAction("caster form") };
+
+    return {};
+}
+
+bool CastDruidRemoveCurseOnPartyAction::isUseful()
+{
+    // A bear does not drop its form (and the threat and armor) to decurse.
+    if (PlayerbotEra::IsVanilla() && botAI->IsTank(bot) && bot->GetShapeshiftForm() != FORM_NONE)
+        return false;
+
+    return CurePartyMemberAction::isUseful();
+}
+
+std::vector<NextAction> CastDruidRemoveCurseOnPartyAction::getPrerequisites()
+{
+    if (PlayerbotEra::IsVanilla())
+        return NextAction::merge({ NextAction("caster form") }, CurePartyMemberAction::getPrerequisites());
+
+    return CurePartyMemberAction::getPrerequisites();
 }

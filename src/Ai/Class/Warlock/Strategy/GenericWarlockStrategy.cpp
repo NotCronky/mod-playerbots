@@ -22,11 +22,13 @@ void GenericWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
 
-    // 1.12: Death Coil heals and horrifies when in trouble; Howl of Terror before running from melee.
+    // 1.12: Death Coil heals and horrifies when in trouble; Howl of Terror before running from melee. Life Tap
+    // keeps the mana up from medium mana on (the healers top the health back up), not only once it is gone.
     if (PlayerbotEra::IsVanilla())
     {
         triggers.push_back(new TriggerNode("critical health", { NextAction("death coil", 45.0f) }));
         triggers.push_back(new TriggerNode("enemy too close for spell", { NextAction("howl of terror", 39.5f) }));
+        triggers.push_back(new TriggerNode("medium mana", { NextAction("life tap", ACTION_NORMAL) }));
     }
 
     triggers.push_back(

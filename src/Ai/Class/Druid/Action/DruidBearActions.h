@@ -23,6 +23,8 @@ class CastGrowlAction : public CastSpellAction
 {
 public:
     CastGrowlAction(PlayerbotAI* botAI) : CastSpellAction(botAI, "growl") {}
+
+    bool isUseful() override;
 };
 
 class CastChallengingRoarAction : public CastMeleeDebuffSpellAction

@@ -11,6 +11,9 @@ namespace MoltenCoreHelpers
 {
 enum MoltenCoreNPCs
 {
+    // Garr
+    NPC_FIRESWORN = 12099,
+
     // Golemagg
     NPC_CORE_RAGER = 11672,
 

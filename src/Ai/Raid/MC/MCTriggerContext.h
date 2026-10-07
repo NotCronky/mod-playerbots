@@ -26,6 +26,8 @@ public:
         creators["mc shazzrah ranged"] = &RaidMcTriggerContext::shazzrah_ranged;
         creators["mc sulfuron harbinger fire resistance"] = &RaidMcTriggerContext::sulfuron_harbinger_fire_resistance;
         creators["mc golemagg fire resistance"] = &RaidMcTriggerContext::golemagg_fire_resistance;
+        creators["mc garr is main tank"] = &RaidMcTriggerContext::garr_is_main_tank;
+        creators["mc garr is assist tank"] = &RaidMcTriggerContext::garr_is_assist_tank;
         creators["mc golemagg mark boss"] = &RaidMcTriggerContext::golemagg_mark_boss;
         creators["mc golemagg is main tank"] = &RaidMcTriggerContext::golemagg_is_main_tank;
         creators["mc golemagg is assist tank"] = &RaidMcTriggerContext::golemagg_is_assist_tank;
@@ -48,6 +50,8 @@ private:
     static Trigger* shazzrah_ranged(PlayerbotAI* botAI) { return new McShazzrahRangedTrigger(botAI); }
     static Trigger* sulfuron_harbinger_fire_resistance(PlayerbotAI* botAI) { return new BossFireResistanceTrigger(botAI, "sulfuron harbinger"); }
     static Trigger* golemagg_fire_resistance(PlayerbotAI* botAI) { return new BossFireResistanceTrigger(botAI, "golemagg the incinerator"); }
+    static Trigger* garr_is_main_tank(PlayerbotAI* botAI) { return new McGarrIsMainTankTrigger(botAI); }
+    static Trigger* garr_is_assist_tank(PlayerbotAI* botAI) { return new McGarrIsAssistTankTrigger(botAI); }
     static Trigger* golemagg_mark_boss(PlayerbotAI* botAI) { return new McGolemaggMarkBossTrigger(botAI); }
     static Trigger* golemagg_is_main_tank(PlayerbotAI* botAI) { return new McGolemaggIsMainTankTrigger(botAI); }
     static Trigger* golemagg_is_assist_tank(PlayerbotAI* botAI) { return new McGolemaggIsAssistTankTrigger(botAI); }

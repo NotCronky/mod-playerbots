@@ -70,10 +70,10 @@ std::vector<NextAction> TankPaladinStrategy::getDefaultActions()
 {
     // 1.12 has no Shield of Righteousness, Hammer of the Righteous or separate judgement spells: Judgement unleashes
     // the seal (Righteousness), and Consecration is the other threat source.
+    // Consecration (565 mana at rank 5) is not a filler: it comes from the AoE and spare-mana triggers.
     if (PlayerbotEra::IsVanilla())
         return {
             NextAction("judgement", ACTION_DEFAULT + 0.5f),
-            NextAction("consecration", ACTION_DEFAULT + 0.2f),
             NextAction("melee", ACTION_DEFAULT)
         };
 
@@ -91,10 +91,14 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
     // 1.12 (no taunt): Holy Shield kept up, Judgement of Righteousness then reseal (the "seal" trigger), and
     // Consecration with mana to spare.
-    if (PlayerbotEra::IsVanilla())
+    // Below medium mana it seals Wisdom instead, so each judgement and swing gives mana back.
+    bool const vanilla = PlayerbotEra::IsVanilla();
+    if (vanilla)
     {
         triggers.push_back(new TriggerNode("holy shield", { NextAction("holy shield", ACTION_HIGH + 6) }));
         triggers.push_back(new TriggerNode("judgement", { NextAction("judgement", ACTION_HIGH + 3) }));
+        triggers.push_back(new TriggerNode("medium mana", { NextAction("seal of wisdom", ACTION_HIGH + 9) }));
+        triggers.push_back(new TriggerNode("medium aoe with mana", { NextAction("consecration", ACTION_HIGH + 7) }));
     }
 
     triggers.push_back(
@@ -105,14 +109,15 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "low mana",
-            {
-                NextAction("seal of wisdom", ACTION_HIGH + 9)
-            }
-        )
-    );
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "low mana",
+                {
+                    NextAction("seal of wisdom", ACTION_HIGH + 9)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "light aoe",
@@ -121,15 +126,16 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "medium aoe",
-            {
-                NextAction("consecration", ACTION_HIGH + 7),
-                NextAction("avenger's shield", ACTION_HIGH + 6)
-            }
-        )
-    );
+    if (!vanilla)
+        triggers.push_back(
+            new TriggerNode(
+                "medium aoe",
+                {
+                    NextAction("consecration", ACTION_HIGH + 7),
+                    NextAction("avenger's shield", ACTION_HIGH + 6)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "lose aggro",

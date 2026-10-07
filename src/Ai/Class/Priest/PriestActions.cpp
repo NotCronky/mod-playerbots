@@ -6,6 +6,7 @@
 
 #include "PriestActions.h"
 #include "Event.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 bool CastRemoveShadowformAction::Execute(Event /*event*/)
@@ -103,4 +104,13 @@ Unit* CastPowerWordShieldOnNotFullAction::GetTarget()
 bool CastPowerWordShieldOnNotFullAction::isUseful()
 {
     return GetTarget();
+}
+
+std::vector<NextAction> CastMindFlayAction::getPrerequisites()
+{
+    // 1.12 Mind Flay reaches 20 yards (30 from 2.0): step in from casting range to channel it.
+    if (PlayerbotEra::IsVanilla())
+        return { NextAction("reach mind flay") };
+
+    return {};
 }

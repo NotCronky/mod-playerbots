@@ -13,6 +13,7 @@
 #include "PriestNonCombatStrategy.h"
 #include "PriestTriggers.h"
 #include "PullStrategy.h"
+#include "ReachTargetActions.h"
 #include "ShadowPriestStrategy.h"
 
 class PriestStrategyFactoryInternal : public NamedObjectContext<Strategy>
@@ -161,6 +162,7 @@ public:
         creators["shadow word: pain on attacker"] = &PriestAiObjectContextInternal::shadow_word_pain_on_attacker;
         creators["devouring plague"] = &PriestAiObjectContextInternal::devouring_plague;
         creators["mind flay"] = &PriestAiObjectContextInternal::mind_flay;
+        creators["reach mind flay"] = &PriestAiObjectContextInternal::reach_mind_flay;
         creators["holy fire"] = &PriestAiObjectContextInternal::holy_fire;
         creators["smite"] = &PriestAiObjectContextInternal::smite;
         creators["mind blast"] = &PriestAiObjectContextInternal::mind_blast;
@@ -265,6 +267,8 @@ private:
     }
     static Action* devouring_plague(PlayerbotAI* botAI) { return new CastDevouringPlagueAction(botAI); }
     static Action* mind_flay(PlayerbotAI* botAI) { return new CastMindFlayAction(botAI); }
+    // 1.12 Mind Flay reaches 20 yards, the other shadow spells 30.
+    static Action* reach_mind_flay(PlayerbotAI* botAI) { return new ReachTargetAction(botAI, "reach mind flay", 18.0f); }
     static Action* holy_fire(PlayerbotAI* botAI) { return new CastHolyFireAction(botAI); }
     static Action* smite(PlayerbotAI* botAI) { return new CastSmiteAction(botAI); }
     static Action* mind_blast(PlayerbotAI* botAI) { return new CastMindBlastAction(botAI); }

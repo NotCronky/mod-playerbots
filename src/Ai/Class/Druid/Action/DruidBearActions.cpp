@@ -5,7 +5,21 @@
  */
 
 #include "DruidBearActions.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
+
+bool CastGrowlAction::isUseful()
+{
+    // 1.12 Growl is melee range (20 yards from 3.0): out of reach, the bear closes in first.
+    if (PlayerbotEra::IsVanilla())
+    {
+        Unit* target = GetTarget();
+        if (!target || !bot->IsWithinMeleeRange(target))
+            return false;
+    }
+
+    return CastSpellAction::isUseful();
+}
 
 bool CastMaulAction::isUseful()
 {
