@@ -16,11 +16,14 @@ static constexpr float INFERNO_DISTANCE = 20.0f;
 // dedicated tank positions; prevents assist tanks from positioning Core Ragers on steep walls on pull
 static const Position GOLEMAGG_TANK_POSITION{795.7308, -994.8848, -207.18661};
 static const Position CORE_RAGER_TANK_POSITION{846.6453, -1019.0639, -198.9819};
-// Garr's spawn. A banished Firesworn stays where it was banished, and one more than 40yd from Garr takes Separation
-// Anxiety (+300% damage, banish immunity), so the main tank keeps him home (tr-20261007-170607-1: tanked at the
-// raid's camp 45yd east, the Firesworn hit for 5-7k).
+// A Firesworn more than 40yd from Garr takes Separation Anxiety (+300% damage, banish immunity). A banished one
+// stays where it was banished and a loose one chases its target, so the main tank keeps Garr at the middle of his
+// living Firesworn: tanked at the raid's camp 45yd east of the banished ones (tr-20261007-170607-1), or held home
+// while the loose ones chased the raid 50yd away (tr-20261007-174713-1), they hit for 4-10k. His spawn is the
+// fallback once they are all dead.
 static const Position GARR_TANK_POSITION{691.0f, -498.4f, -214.3f};
 static constexpr float GARR_TANK_POSITION_TOLERANCE = 6.0f;
+static constexpr float GARR_FIRESWORN_SEARCH_RANGE = 100.0f;
 static constexpr float TANK_STEP_DISTANCE = 3.0f;
 
 // Midpoint of the two tank camps (56y apart): healers standing here reach both
@@ -230,9 +233,30 @@ bool McGarrMainTankAction::Execute(Event event)
     if (garr->GetVictim() != bot)
         return botAI->DoSpecificAction("taunt spell", event, true);
 
-    // Step him back home, a few yards at a time so he stays in melee.
-    float const dX = GARR_TANK_POSITION.GetPositionX() - bot->GetPositionX();
-    float const dY = GARR_TANK_POSITION.GetPositionY() - bot->GetPositionY();
+    float anchorX = GARR_TANK_POSITION.GetPositionX();
+    float anchorY = GARR_TANK_POSITION.GetPositionY();
+    std::list<Creature*> found;
+    garr->GetCreatureListWithEntryInGrid(found, NPC_FIRESWORN, GARR_FIRESWORN_SEARCH_RANGE);
+    float sumX = 0.0f;
+    float sumY = 0.0f;
+    uint32 alive = 0;
+    for (Creature* add : found)
+    {
+        if (!add->IsAlive())
+            continue;
+        sumX += add->GetPositionX();
+        sumY += add->GetPositionY();
+        ++alive;
+    }
+    if (alive)
+    {
+        anchorX = sumX / alive;
+        anchorY = sumY / alive;
+    }
+
+    // Step him toward the anchor, a few yards at a time so he stays in melee.
+    float const dX = anchorX - bot->GetPositionX();
+    float const dY = anchorY - bot->GetPositionY();
     float const dist = std::sqrt(dX * dX + dY * dY);
     if (dist <= GARR_TANK_POSITION_TOLERANCE)
         return false;
