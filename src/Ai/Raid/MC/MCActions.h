@@ -44,6 +44,15 @@ public:
     bool Execute(Event event) override;
 };
 
+// Garr: step out of the blast radius of a Firesworn about to erupt.
+class McMoveFromDyingFireswornAction : public MovementAction
+{
+public:
+    McMoveFromDyingFireswornAction(PlayerbotAI* botAI, std::string const name = "mc move from dying firesworn")
+        : MovementAction(botAI, name) {}
+    bool Execute(Event event) override;
+};
+
 class McMajordomoLeaveCoalsAction : public MovementAction
 {
 public:

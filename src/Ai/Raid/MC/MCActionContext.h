@@ -38,6 +38,7 @@ public:
         creators["mc core hound mark"] = &RaidMcActionContext::core_hound_mark;
         creators["mc move from lava"] = &RaidMcActionContext::move_from_lava;
         creators["mc majordomo leave coals"] = &RaidMcActionContext::majordomo_leave_coals;
+        creators["mc move from dying firesworn"] = &RaidMcActionContext::move_from_dying_firesworn;
         creators["mc golemagg back off"] = &RaidMcActionContext::golemagg_back_off;
         creators["mc golemagg healer position"] = &RaidMcActionContext::golemagg_healer_position;
     }
@@ -64,6 +65,7 @@ private:
     static Action* core_hound_mark(PlayerbotAI* botAI) { return new McCoreHoundMarkAction(botAI); }
     static Action* move_from_lava(PlayerbotAI* botAI) { return new McMoveFromLavaAction(botAI); }
     static Action* majordomo_leave_coals(PlayerbotAI* botAI) { return new McMajordomoLeaveCoalsAction(botAI); }
+    static Action* move_from_dying_firesworn(PlayerbotAI* botAI) { return new McMoveFromDyingFireswornAction(botAI); }
     static Action* golemagg_back_off(PlayerbotAI* botAI) { return new McGolemaggBackOffAction(botAI); }
     static Action* golemagg_healer_position(PlayerbotAI* botAI) { return new McGolemaggHealerPositionAction(botAI); }
 };

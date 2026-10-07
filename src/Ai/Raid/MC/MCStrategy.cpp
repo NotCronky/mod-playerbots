@@ -43,6 +43,9 @@ void RaidMcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(
         new TriggerNode("mc garr is warlock",
                         { NextAction("mc garr banish firesworn", ACTION_RAID + 1) }));
+    triggers.push_back(
+        new TriggerNode("mc firesworn eruption",
+                        { NextAction("mc move from dying firesworn", ACTION_RAID + 2) }));
 
     // Baron Geddon
     triggers.push_back(
@@ -139,13 +142,17 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
             continue;
 
         // A banished Firesworn is immune: leave it to its warlock. Only a free
-        // one holds the damage dealers off Garr.
+        // one holds the damage dealers off Garr. One about to erupt is left to
+        // ranged: melee damage dealers would stand in the blast.
         if (unit->GetEntry() == NPC_FIRESWORN && unit->IsAlive())
         {
             if (botAI->HasAura("banish", unit))
                 exclusions.insert(guid);
             else
                 fireswornAlive = true;
+            if (type == TargetValueExclusionType::Dps && PlayerbotAI::IsMelee(botAI->GetBot()) &&
+                !PlayerbotAI::IsTank(botAI->GetBot()) && unit->GetHealthPct() <= FIRESWORN_ERUPTION_HEALTH_PCT)
+                exclusions.insert(guid);
         }
 
         if ((golemaggAlive && unit->GetEntry() == NPC_CORE_RAGER) || unit->GetEntry() == NPC_MAJORDOMO_EXECUTUS)

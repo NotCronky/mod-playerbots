@@ -8,7 +8,9 @@
 #define PLAYERBOTS_MCHELPERS_H
 
 #include <cmath>
+#include <list>
 
+#include "Creature.h"
 #include "Object.h"
 
 namespace MoltenCoreHelpers
@@ -60,6 +62,28 @@ constexpr float MAJORDOMO_COALS_RADIUS = 12.0f;
 // Dry floor on either side of the pit: Majordomo's own spot, and the raid's side where it comes in.
 constexpr float MAJORDOMO_DRY_EAST_X = 759.5f, MAJORDOMO_DRY_EAST_Y = -1173.4f, MAJORDOMO_DRY_EAST_Z = -119.3f;
 constexpr float MAJORDOMO_DRY_WEST_X = 717.0f, MAJORDOMO_DRY_WEST_Y = -1165.0f, MAJORDOMO_DRY_WEST_Z = -119.5f;
+
+// Garr: a Firesworn erupts as it dies (Eruption, 19497: 15yd, ~2k fire and a knockback; four times that under
+// Separation Anxiety). Ten raiders died to Eruptions meleeing the leftovers in one pile after Garr fell
+// (tr-20261007-213207-1, 7-8.5k each). Below this health everyone but the tanks stands clear and ranged finish it.
+constexpr float FIRESWORN_ERUPTION_HEALTH_PCT = 20.0f;
+constexpr float FIRESWORN_ERUPTION_SAFE_DISTANCE = 18.0f;
+
+// The nearest living Firesworn about to erupt within `range` of `obj`, if any.
+inline Creature* FindDyingFiresworn(WorldObject const* obj, float range)
+{
+    std::list<Creature*> found;
+    obj->GetCreatureListWithEntryInGrid(found, NPC_FIRESWORN, range);
+    Creature* nearest = nullptr;
+    for (Creature* add : found)
+    {
+        if (!add->IsAlive() || add->GetHealthPct() > FIRESWORN_ERUPTION_HEALTH_PCT)
+            continue;
+        if (!nearest || obj->GetDistance(add) < obj->GetDistance(nearest))
+            nearest = add;
+    }
+    return nearest;
+}
 
 inline bool InMajordomoCoals(WorldObject const* obj)
 {

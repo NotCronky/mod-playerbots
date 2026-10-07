@@ -111,3 +111,9 @@ bool McCoreHoundMarkTrigger::IsActive()
 {
     return PlayerbotAI::IsMainTank(bot) && AI_VALUE2(Unit*, "find target", "core hound");
 }
+
+bool McFireswornEruptionTrigger::IsActive()
+{
+    return bot->IsAlive() && !PlayerbotAI::IsTank(bot) &&
+           FindDyingFiresworn(bot, FIRESWORN_ERUPTION_SAFE_DISTANCE) != nullptr;
+}

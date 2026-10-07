@@ -57,6 +57,19 @@ bool McMoveFromBaronGeddonAction::Execute(Event /*event*/)
     return false;
 }
 
+bool McMoveFromDyingFireswornAction::Execute(Event /*event*/)
+{
+    Creature* add = FindDyingFiresworn(bot, FIRESWORN_ERUPTION_SAFE_DISTANCE);
+    if (!add)
+        return false;
+    float const distToTravel = FIRESWORN_ERUPTION_SAFE_DISTANCE - bot->GetDistance2d(add);
+    if (distToTravel <= 0.0f)
+        return false;
+    if (bot->GetVictim() == add)
+        bot->AttackStop();
+    return MoveAway(add, distToTravel);
+}
+
 bool McShazzrahMoveAwayAction::Execute(Event /*event*/)
 {
     if (Unit* boss = AI_VALUE2(Unit*, "find target", "shazzrah"))

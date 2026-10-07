@@ -96,6 +96,14 @@ public:
     bool IsActive() override;
 };
 
+// Garr: a Firesworn about to erupt is within its blast radius (not for tanks, who hold it).
+class McFireswornEruptionTrigger : public Trigger
+{
+public:
+    McFireswornEruptionTrigger(PlayerbotAI* botAI) : Trigger(botAI, "mc firesworn eruption") {}
+    bool IsActive() override;
+};
+
 class McMajordomoInCoalsTrigger : public Trigger
 {
 public:
