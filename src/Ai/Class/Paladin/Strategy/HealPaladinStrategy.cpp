@@ -23,14 +23,14 @@ void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
 
-    // 1.12: Flash of Light is the efficient heal to spam (Illumination refunds crits); Holy Light for big deficits.
+    // 1.12: a seal only pays off for a paladin that melees, so it comes after every heal.
     bool const vanilla = PlayerbotEra::IsVanilla();
 
     triggers.push_back(
         new TriggerNode(
             "seal",
             {
-                NextAction("seal of wisdom", ACTION_HIGH),
+                NextAction("seal of wisdom", vanilla ? ACTION_NORMAL : ACTION_HIGH),
             }
         )
     );
@@ -89,8 +89,8 @@ void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "party member medium health",
             {
-                NextAction("holy light on party", vanilla ? ACTION_LIGHT_HEAL + 8 : ACTION_LIGHT_HEAL + 9),
-                NextAction("flash of light on party", vanilla ? ACTION_LIGHT_HEAL + 9 : ACTION_LIGHT_HEAL + 8)
+                NextAction("holy light on party", ACTION_LIGHT_HEAL + 9),
+                NextAction("flash of light on party", ACTION_LIGHT_HEAL + 8)
             }
         )
     );

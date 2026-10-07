@@ -5,6 +5,8 @@
  */
 
 #include "EstimatedLifetimeValue.h"
+
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
@@ -94,6 +96,12 @@ float EstimatedGroupDpsValue::Calculate()
 float EstimatedGroupDpsValue::GetBasicDps(uint32 level)
 {
     float basic_dps;
+
+    // 1.12 damage is far below the 2.4/3.3 numbers further down (blue-geared level 60 DPS is ~150-250, not 550):
+    // with those the group looks able to kill a mob in a couple of seconds, CastTimeMultiplier drops every
+    // spell with a cast time, and casters fall back to the wand.
+    if (PlayerbotEra::IsVanilla() && level > 45)
+        return 100 + (std::min(level, 60u) - 45) * 7.0f;
 
     if (level <= 15)
     {

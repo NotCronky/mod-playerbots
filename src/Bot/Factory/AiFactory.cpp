@@ -425,7 +425,8 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     {
         if (sPlayerbotAIConfig.autoSaveMana)
             engine->addStrategy("save mana", false);
-        if (!sPlayerbotAIConfig.IsRestrictedHealerDPSMap(player->GetMapId()))
+        // 1.12 healers have no mana to spare for damage in a fight.
+        if (!sPlayerbotAIConfig.IsRestrictedHealerDPSMap(player->GetMapId()) && !PlayerbotEra::IsVanilla())
             engine->addStrategy("healer dps", false);
     }
 
