@@ -46,6 +46,13 @@ public:
     bool IsActive() override;
 };
 
+class McGarrIsWarlockTrigger : public Trigger
+{
+public:
+    McGarrIsWarlockTrigger(PlayerbotAI* botAI) : Trigger(botAI, "mc garr is warlock") {}
+    bool IsActive() override;
+};
+
 class McGolemaggMarkBossTrigger : public Trigger
 {
 public:

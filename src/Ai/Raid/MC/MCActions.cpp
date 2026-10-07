@@ -206,6 +206,44 @@ bool McGarrMainTankAction::Execute(Event event)
     return false;
 }
 
+bool McGarrBanishFireswornAction::Execute(Event /*event*/)
+{
+    Group* group = bot->GetGroup();
+    if (!group)
+        return false;
+
+    // My place among the group's living warlocks.
+    std::vector<ObjectGuid> warlocks;
+    for (GroupReference* ref = group->GetFirstMember(); ref; ref = ref->next())
+        if (Player* member = ref->GetSource())
+            if (member->IsAlive() && member->getClass() == CLASS_WARLOCK && member->GetMapId() == bot->GetMapId())
+                warlocks.push_back(member->GetGUID());
+    std::sort(warlocks.begin(), warlocks.end());
+    std::size_t const mine = std::find(warlocks.begin(), warlocks.end(), bot->GetGUID()) - warlocks.begin();
+
+    // The living Firesworn around Garr in the same order. Searched around him rather than read off the attackers,
+    // which a banished add can drop out of: the order, and so who banishes what, must not shift.
+    Unit* garr = AI_VALUE2(Unit*, "find target", "garr");
+    if (!garr)
+        return false;
+    std::list<Creature*> found;
+    garr->GetCreatureListWithEntryInGrid(found, NPC_FIRESWORN, 60.0f);
+    std::vector<Unit*> adds;
+    for (Creature* add : found)
+        if (add->IsAlive())
+            adds.push_back(add);
+    std::sort(adds.begin(), adds.end(), [](Unit* a, Unit* b) { return a->GetGUID() < b->GetGUID(); });
+    if (mine >= adds.size())
+        return false;
+
+    Unit* add = adds[mine];
+    if (Aura* banish = botAI->GetAura("banish", add, false))
+        if (banish->GetDuration() > GARR_BANISH_REFRESH_MS)
+            return false;
+
+    return botAI->CastSpell("banish", add);
+}
+
 bool McGarrAssistTankAction::Execute(Event event)
 {
     // A Firesworn already on this tank stays there.
@@ -219,7 +257,7 @@ bool McGarrAssistTankAction::Execute(Event event)
     for (ObjectGuid const guid : AI_VALUE(GuidVector, "attackers"))
     {
         Unit* unit = botAI->GetUnit(guid);
-        if (!unit || !unit->IsAlive() || unit->GetEntry() != NPC_FIRESWORN)
+        if (!unit || !unit->IsAlive() || unit->GetEntry() != NPC_FIRESWORN || botAI->HasAura("banish", unit))
             continue;
 
         Unit* addVictim = unit->GetVictim();

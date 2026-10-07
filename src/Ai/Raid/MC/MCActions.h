@@ -78,6 +78,16 @@ public:
     bool Execute(Event event) override;
 };
 
+// Garr: each warlock keeps "its" Firesworn banished (the n-th living warlock of the group, by guid, takes the n-th
+// living Firesworn, by guid), so the tanks and the damage dealers only face the adds left over.
+class McGarrBanishFireswornAction : public Action
+{
+public:
+    McGarrBanishFireswornAction(PlayerbotAI* botAI, std::string const name = "mc garr banish firesworn")
+        : Action(botAI, name) {}
+    bool Execute(Event event) override;
+};
+
 class McGolemaggTankAction : public AttackAction
 {
 public:

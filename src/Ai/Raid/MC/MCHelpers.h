@@ -34,6 +34,9 @@ enum MoltenCoreSpells
     SPELL_MAGMA_SPLASH = 13880,
 };
 
+// Garr: each warlock keeps one Firesworn banished, refreshed under this much time left.
+constexpr int32 GARR_BANISH_REFRESH_MS = 5000;
+
 constexpr uint32 MAGMA_SPLASH_BACK_OFF_STACKS = 20;
 constexpr float MAGMA_SPLASH_BACK_OFF_DISTANCE = 12.0f;
 

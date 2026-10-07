@@ -40,6 +40,9 @@ void RaidMcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(
         new TriggerNode("mc garr is assist tank",
                         { NextAction("mc garr assist tank attack firesworn", ACTION_RAID) }));
+    triggers.push_back(
+        new TriggerNode("mc garr is warlock",
+                        { NextAction("mc garr banish firesworn", ACTION_RAID + 1) }));
 
     // Baron Geddon
     triggers.push_back(
@@ -130,15 +133,22 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
         if (!unit)
             continue;
 
+        // A banished Firesworn is immune: leave it to its warlock. Only a free
+        // one holds the damage dealers off Garr.
         if (unit->GetEntry() == NPC_FIRESWORN && unit->IsAlive())
-            fireswornAlive = true;
+        {
+            if (botAI->HasAura("banish", unit))
+                exclusions.insert(guid);
+            else
+                fireswornAlive = true;
+        }
 
         if ((golemaggAlive && unit->GetEntry() == NPC_CORE_RAGER) || unit->GetEntry() == NPC_MAJORDOMO_EXECUTUS)
             exclusions.insert(guid);
     }
 
-    // Garr: the Firesworn die first, one at a time (each death erupts and gives Garr a Frenzy stack, but loose adds
-    // kill the healers); damage dealers leave Garr to the main tank until they are dead.
+    // Garr: the free Firesworn die first, one at a time (each death erupts and gives Garr a Frenzy stack, but loose
+    // adds kill the healers); damage dealers leave Garr to the main tank until they are dead. The banished ones wait.
     if (garr && fireswornAlive && type == TargetValueExclusionType::Dps)
         exclusions.insert(garr->GetGUID());
 }

@@ -76,6 +76,11 @@ bool McGarrIsAssistTankTrigger::IsActive()
     return PlayerbotAI::IsAssistTank(bot) && AI_VALUE2(Unit*, "find target", "garr");
 }
 
+bool McGarrIsWarlockTrigger::IsActive()
+{
+    return bot->getClass() == CLASS_WARLOCK && bot->IsInCombat() && AI_VALUE2(Unit*, "find target", "garr");
+}
+
 bool McGolemaggMarkBossTrigger::IsActive()
 {
     // any tank may mark the boss
