@@ -77,7 +77,7 @@ std::vector<NextAction> SurvivalHunterStrategy::getDefaultActions()
 // ===== Trigger Initialization ===
 void SurvivalHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
-    bool const vanilla = PlayerbotEra::IsVanilla();
+    bool const classic = PlayerbotEra::IsClassic();
     GenericHunterStrategy::InitTriggers(triggers);
 
     triggers.push_back(
@@ -120,8 +120,8 @@ void SurvivalHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    // 1.12 Viper Sting drains the target's mana without returning any.
-    if (!vanilla)
+    // 1.12 and 2.4.3 Viper Sting drains the target's mana without returning any.
+    if (!classic)
         triggers.push_back(
             new TriggerNode(
                 "low mana",

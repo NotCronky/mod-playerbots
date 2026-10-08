@@ -68,11 +68,12 @@ TankPaladinStrategy::TankPaladinStrategy(PlayerbotAI* botAI) : GenericPaladinStr
 
 std::vector<NextAction> TankPaladinStrategy::getDefaultActions()
 {
-    // 1.12 has no Shield of Righteousness, Hammer of the Righteous or separate judgement spells: Judgement unleashes
-    // the seal (Righteousness), and Consecration is the other threat source.
+    // 1.12 and 2.4.3 have no Shield of Righteousness, Hammer of the Righteous or separate judgement spells: Judgement
+    // unleashes the seal (Righteousness), and Consecration is the other threat source (with 2.4.3's Avenger's Shield).
     // Consecration (565 mana at rank 5) is not a filler: it comes from the AoE and spare-mana triggers.
-    if (PlayerbotEra::IsVanilla())
+    if (PlayerbotEra::IsClassic())
         return {
+            NextAction("avenger's shield", ACTION_DEFAULT + 0.6f),
             NextAction("judgement", ACTION_DEFAULT + 0.5f),
             NextAction("melee", ACTION_DEFAULT)
         };
@@ -89,11 +90,11 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
 
-    // 1.12 (no taunt): Holy Shield kept up, Judgement of Righteousness then reseal (the "seal" trigger), and
+    // 1.12 and 2.4.3: Holy Shield kept up, Judgement of Righteousness then reseal (the "seal" trigger), and
     // Consecration with mana to spare.
     // Below medium mana it seals Wisdom instead, so each judgement and swing gives mana back.
-    bool const vanilla = PlayerbotEra::IsVanilla();
-    if (vanilla)
+    bool const classic = PlayerbotEra::IsClassic();
+    if (classic)
     {
         triggers.push_back(new TriggerNode("holy shield", { NextAction("holy shield", ACTION_HIGH + 6) }));
         triggers.push_back(new TriggerNode("judgement", { NextAction("judgement", ACTION_HIGH + 3) }));
@@ -109,7 +110,7 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    if (!vanilla)
+    if (!classic)
         triggers.push_back(
             new TriggerNode(
                 "low mana",
@@ -126,7 +127,7 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    if (!vanilla)
+    if (!classic)
         triggers.push_back(
             new TriggerNode(
                 "medium aoe",

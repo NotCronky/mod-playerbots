@@ -153,6 +153,14 @@ void WrathOfAirTotemStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         return;
     }
 
+    // 2.4.3 has Wrath of Air Totem (from 64) but no totem bar: Tranquil Air Totem until then.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("no air totem", { NextAction("wrath of air totem", 55.0f),
+                                                             NextAction("tranquil air totem", 54.0f) }));
+        return;
+    }
+
     // If the bot hasn't learned Wrath of Air Totem yet, set Grounding Totem instead.
     Player* bot = botAI->GetBot();
     if (bot->HasSpell(SPELL_WRATH_OF_AIR_TOTEM))

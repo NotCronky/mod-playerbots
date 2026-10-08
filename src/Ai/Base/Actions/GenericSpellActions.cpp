@@ -418,7 +418,7 @@ namespace
 
 bool CastHealingSpellAction::Execute(Event event)
 {
-    if (!PlayerbotEra::IsVanilla())
+    if (!PlayerbotEra::IsClassic())
         return CastAuraSpellAction::Execute(event);
 
     Unit* target = GetTarget();

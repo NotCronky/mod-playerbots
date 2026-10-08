@@ -90,11 +90,11 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
-    // 1.12: Execute > Mortal Strike > Overpower, with Rend only as a filler.
-    bool const vanilla = PlayerbotEra::IsVanilla();
-    float const rend = vanilla ? ACTION_NORMAL + 1 : ACTION_HIGH + 8;
-    float const mortalStrike = vanilla ? ACTION_HIGH + 5 : ACTION_HIGH + 3;
-    float const execute = vanilla ? ACTION_HIGH + 6 : ACTION_HIGH + 5;
+    // 1.12 and 2.4.3: Execute > Mortal Strike > Overpower, with Rend only as a filler.
+    bool const classic = PlayerbotEra::IsClassic();
+    float const rend = classic ? ACTION_NORMAL + 1 : ACTION_HIGH + 8;
+    float const mortalStrike = classic ? ACTION_HIGH + 5 : ACTION_HIGH + 3;
+    float const execute = classic ? ACTION_HIGH + 6 : ACTION_HIGH + 5;
 
     triggers.push_back(
         new TriggerNode(

@@ -8,6 +8,11 @@
 #include "PlayerbotEra.h"
 #include "Playerbots.h"
 
+namespace
+{
+    constexpr uint32 SPELL_MUTILATE_RANK_1 = 1329;
+}
+
 class AssassinationRogueStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:
@@ -75,9 +80,10 @@ void AssassinationRogueStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
 {
     GenericRogueStrategy::InitTriggers(triggers);
 
-    // 1.12 has no Mutilate or Envenom (and Subtlety rogues use this strategy too): build with Ghostly Strike,
-    // Hemorrhage or Sinister Strike from 40 energy, Backstab from behind with a dagger, and finish with Eviscerate.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 has no Mutilate or Envenom, and a 2.4.3 rogue gets them late (Subtlety rogues use this strategy too): build
+    // with Ghostly Strike, Hemorrhage or Sinister Strike from 40 energy, Backstab from behind with a dagger, and finish
+    // with Eviscerate.
+    if (PlayerbotEra::IsVanilla() || (PlayerbotEra::IsTbc() && !botAI->GetBot()->HasSpell(SPELL_MUTILATE_RANK_1)))
     {
         triggers.push_back(new TriggerNode("medium energy available", { NextAction("ghostly strike", ACTION_NORMAL + 6),
                                                                         NextAction("hemorrhage", ACTION_NORMAL + 5),

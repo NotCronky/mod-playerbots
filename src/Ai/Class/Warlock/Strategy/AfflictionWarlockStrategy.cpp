@@ -30,8 +30,8 @@ void AfflictionWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
 {
     GenericWarlockStrategy::InitTriggers(triggers);
 
-    // 1.12 has no Unstable Affliction or Haunt: Siphon Life takes their place.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 has no Unstable Affliction, and neither has Haunt: Siphon Life is kept up too.
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("siphon life", { NextAction("siphon life", 17.5f) }));
 
     // Main DoT triggers for high uptime

@@ -116,8 +116,8 @@ void GenericShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
 
-    // 1.12 has no Wind Shear: Earth Shock interrupts.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 have no Wind Shear: Earth Shock interrupts.
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("earth shock interrupt", { NextAction("earth shock", 23.5f) }));
 
     triggers.push_back(new TriggerNode("wind shear", { NextAction("wind shear", 23.0f), }));

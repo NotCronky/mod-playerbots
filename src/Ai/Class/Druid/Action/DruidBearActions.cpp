@@ -10,8 +10,8 @@
 
 bool CastGrowlAction::isUseful()
 {
-    // 1.12 Growl is melee range (20 yards from 3.0): out of reach, the bear closes in first.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 Growl is melee range (20 yards from 3.0): out of reach, the bear closes in first.
+    if (PlayerbotEra::IsClassic())
     {
         Unit* target = GetTarget();
         if (!target || !bot->IsWithinMeleeRange(target))

@@ -23,14 +23,14 @@ void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
 
-    // 1.12: a seal only pays off for a paladin that melees, so it comes after every heal.
-    bool const vanilla = PlayerbotEra::IsVanilla();
+    // 1.12 and 2.4.3: a seal only pays off for a paladin that melees, so it comes after every heal.
+    bool const classic = PlayerbotEra::IsClassic();
 
     triggers.push_back(
         new TriggerNode(
             "seal",
             {
-                NextAction("seal of wisdom", vanilla ? ACTION_NORMAL : ACTION_HIGH),
+                NextAction("seal of wisdom", classic ? ACTION_NORMAL : ACTION_HIGH),
             }
         )
     );

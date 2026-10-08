@@ -17,6 +17,7 @@ bool SealTrigger::IsActive()
     return !botAI->HasAura("seal of justice", target) && !botAI->HasAura("seal of command", target) &&
            !botAI->HasAura("seal of vengeance", target) && !botAI->HasAura("seal of corruption", target) &&
            !botAI->HasAura("seal of righteousness", target) && !botAI->HasAura("seal of light", target) &&
+           !botAI->HasAura("seal of blood", target) &&      // 2.4.3, Horde
            (!botAI->HasAura("seal of wisdom", target) || AI_VALUE2(uint8, "mana", "self target") > 70);
 }
 

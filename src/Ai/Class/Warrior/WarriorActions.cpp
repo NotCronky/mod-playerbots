@@ -236,9 +236,9 @@ bool CastShatteringThrowAction::isPossible()
 
 bool CastCleaveAction::isUseful()
 {
-    // 1.12: Cleave spends 20 rage on the next swing. A tank keeps that rage for Sunder Armor, Revenge and Shield Slam
-    // until it has plenty; anyone else until the swing will not starve the rest of the rotation.
-    if (PlayerbotEra::IsVanilla() && AI_VALUE2(uint8, "rage", "self target") < (botAI->IsTank(bot) ? 50 : 30))
+    // 1.12 and 2.4.3: Cleave spends 20 rage on the next swing. A tank keeps that rage for Sunder Armor, Revenge and
+    // Shield Slam until it has plenty; anyone else until the swing will not starve the rest of the rotation.
+    if (PlayerbotEra::IsClassic() && AI_VALUE2(uint8, "rage", "self target") < (botAI->IsTank(bot) ? 50 : 30))
         return false;
 
     return CastMeleeSpellAction::isUseful();
@@ -250,8 +250,8 @@ bool CastTauntAction::isUseful()
     if (!target || target->GetTarget() == bot->GetGUID())
         return false;
 
-    // 1.12 Taunt is melee range (30 yards from 3.0): out of reach, the tank closes in first.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 Taunt is melee range (30 yards from 3.0): out of reach, the tank closes in first.
+    if (PlayerbotEra::IsClassic())
         return CastMeleeSpellAction::isUseful();
 
     return true;
@@ -266,8 +266,8 @@ bool CastDisarmAction::isUseful()
     if (target->IsPlayer())
         return !botAI->IsRanged(target->ToPlayer());
 
-    // 1.12 Disarm is melee range.
-    if (PlayerbotEra::IsVanilla() && !bot->IsWithinMeleeRange(target))
+    // 1.12 and 2.4.3 Disarm is melee range.
+    if (PlayerbotEra::IsClassic() && !bot->IsWithinMeleeRange(target))
         return false;
 
     return CastDebuffSpellAction::isUseful();

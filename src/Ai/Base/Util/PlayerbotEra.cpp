@@ -19,3 +19,17 @@ bool PlayerbotEra::IsVanilla()
     return false;
 #endif
 }
+
+bool PlayerbotEra::IsTbc()
+{
+#ifdef PLAYERBOTS_PROGRESSIVE_ERA
+    return Progressive::GetRealmEra() == Progressive::Era::Tbc;
+#else
+    return false;
+#endif
+}
+
+bool PlayerbotEra::IsClassic()
+{
+    return IsVanilla() || IsTbc();
+}

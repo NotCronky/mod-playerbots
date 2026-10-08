@@ -23,9 +23,9 @@ float ThreatMultiplier::GetValue(Action* action)
     if (!AI_VALUE(bool, "group"))
         return 1.0f;
 
-    // 1.12: escapes, interrupts and emergencies (Frost Nova, Blink, Kick, Death Coil) go ahead whatever the threat,
-    // and so does anything not aimed at an enemy (Life Tap, Innervate, buffs).
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3: escapes, interrupts and emergencies (Frost Nova, Blink, Kick, Death Coil) go ahead whatever the
+    // threat, and so does anything not aimed at an enemy (Life Tap, Innervate, buffs).
+    if (PlayerbotEra::IsClassic())
     {
         if (action->getRelevance() >= ACTION_MOVE)
             return 1.0f;

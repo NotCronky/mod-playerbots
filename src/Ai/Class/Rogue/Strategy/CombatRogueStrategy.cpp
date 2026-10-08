@@ -79,8 +79,8 @@ void CombatRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericRogueStrategy::InitTriggers(triggers);
 
-    // 1.12: Sinister Strike from 40 energy (it costs 40-45), not only when energy caps.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3: Sinister Strike from 40 energy (it costs 40-45), not only when energy caps.
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("medium energy available", { NextAction("sinister strike", ACTION_NORMAL + 3) }));
 
     triggers.push_back(
@@ -253,8 +253,8 @@ StealthedRogueStrategy::StealthedRogueStrategy(PlayerbotAI* botAI) : Strategy(bo
 
 std::vector<NextAction> StealthedRogueStrategy::getDefaultActions()
 {
-    // 1.12: Premeditation (Subtlety) adds two combo points before the opener.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3: Premeditation (Subtlety) adds two combo points before the opener.
+    if (PlayerbotEra::IsClassic())
         return {
             NextAction("premeditation", ACTION_NORMAL + 5),
             NextAction("ambush", ACTION_NORMAL + 4),

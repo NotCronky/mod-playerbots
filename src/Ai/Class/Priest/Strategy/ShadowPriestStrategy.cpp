@@ -108,7 +108,7 @@ void ShadowPriestAoeStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
 void ShadowPriestDebuffStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
-    if (PlayerbotEra::IsVanilla())
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("vampiric embrace on target",
                                            { NextAction("vampiric embrace on target", ACTION_HIGH + 3) }));
 

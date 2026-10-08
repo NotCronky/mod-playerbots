@@ -175,14 +175,15 @@ void MageAoeStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode("blizzard channel check", { NextAction("cancel channel", 26.0f) }));
 
-    // 1.12: AoE costs a fifth of the mage's mana and pulls the pack off a tank that has little threat on most of it,
-    // so Blizzard and Flamestrike wait for four mobs and a healthy mana bar, Arcane Explosion and Cone of Cold for
-    // three, for every spec.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3: AoE costs a fifth of the mage's mana and pulls the pack off a tank that has little threat on most
+    // of it, so Blizzard and Flamestrike wait for four mobs and a healthy mana bar, Arcane Explosion, Cone of Cold and
+    // the fire cones for three, for every spec.
+    if (PlayerbotEra::IsClassic())
     {
         triggers.push_back(new TriggerNode("high aoe with mana", { NextAction("flamestrike", 23.0f),
                                                                    NextAction("blizzard", 22.0f) }));
         triggers.push_back(new TriggerNode("medium aoe with mana", { NextAction("blast wave", 22.5f),
+                                                                     NextAction("dragon's breath", 22.0f),
                                                                      NextAction("arcane explosion", 21.5f),
                                                                      NextAction("cone of cold", 21.0f) }));
         return;

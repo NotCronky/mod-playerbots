@@ -8,10 +8,14 @@
 #define PLAYERBOTS_PLAYERBOTERA_H
 
 // The realm's era, from mod-progressive when it is installed (one realm per era, each with its own spells).
-// Class strategies use it where 1.12 plays differently from 3.3.5; without mod-progressive every realm is WotLK.
+// Class strategies use it where 1.12 or 2.4.3 plays differently from 3.3.5; without mod-progressive every realm is
+// WotLK.
 namespace PlayerbotEra
 {
     bool IsVanilla();
+    bool IsTbc();
+    // Vanilla or TBC: where 1.12 and 2.4.3 play alike and 3.3.5 differs.
+    bool IsClassic();
 }
 
 #endif

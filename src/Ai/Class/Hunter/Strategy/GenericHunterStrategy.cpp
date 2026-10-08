@@ -85,9 +85,9 @@ void GenericHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode("enemy too close for auto shot", { NextAction("disengage", 35.0f),
                                                                           NextAction("flee", 34.0f) }));
 
-    // 1.12 has no Disengage: before running, Frost Trap or Scatter Shot buys the distance; Counterattack after a
-    // parry.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 has no Disengage, and 2.4.3's only lowers threat: before running, Frost Trap or Scatter Shot buys the
+    // distance; Counterattack after a parry.
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("enemy within melee", { NextAction("frost trap", 37.5f),
                                                                    NextAction("scatter shot", 36.0f),
                                                                    NextAction("counterattack", 22.5f) }));

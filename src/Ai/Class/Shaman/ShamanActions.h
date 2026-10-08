@@ -212,15 +212,15 @@ class CastCureToxinsActionSham : public CastCureSpellAction
 {
 public:
     CastCureToxinsActionSham(PlayerbotAI* botAI) :
-        CastCureSpellAction(botAI, PlayerbotEra::IsVanilla() ? "cure poison" : "cure toxins") {}
+        CastCureSpellAction(botAI, PlayerbotEra::IsClassic() ? "cure poison" : "cure toxins") {}
 };
 
 class CastCureToxinsPoisonOnPartyActionSham : public CurePartyMemberAction
 {
 public:
     CastCureToxinsPoisonOnPartyActionSham(PlayerbotAI* botAI) :
-        // 1.12 has Cure Poison and Cure Disease in place of Cure Toxins.
-        CurePartyMemberAction(botAI, PlayerbotEra::IsVanilla() ? "cure poison" : "cure toxins", DISPEL_POISON) {}
+        // 1.12 and 2.4.3 have Cure Poison and Cure Disease in place of Cure Toxins.
+        CurePartyMemberAction(botAI, PlayerbotEra::IsClassic() ? "cure poison" : "cure toxins", DISPEL_POISON) {}
 
     std::string const getName() override { return "cure toxins poison on party"; }
 };
@@ -229,7 +229,7 @@ class CastCureToxinsDiseaseOnPartyActionSham : public CurePartyMemberAction
 {
 public:
     CastCureToxinsDiseaseOnPartyActionSham(PlayerbotAI* botAI) :
-        CurePartyMemberAction(botAI, PlayerbotEra::IsVanilla() ? "cure disease" : "cure toxins", DISPEL_DISEASE) {}
+        CurePartyMemberAction(botAI, PlayerbotEra::IsClassic() ? "cure disease" : "cure toxins", DISPEL_DISEASE) {}
 
     std::string const getName() override { return "cure toxins disease on party"; }
 };

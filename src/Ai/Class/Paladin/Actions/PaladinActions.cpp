@@ -607,9 +607,9 @@ bool CastCancelDivineSacrificeAction::isUseful()
 
 bool CastJudgementAction::isUseful()
 {
-    // 1.12 Judgement reaches 10 yards and spends the seal, which costs about as much again to put back: a damage
-    // dealer judges while it has the mana for both; a tank, whose threat it is, always.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 Judgement reaches 10 yards and spends the seal, which costs about as much again to put back: a
+    // damage dealer judges while it has the mana for both; a tank, whose threat it is, always.
+    if (PlayerbotEra::IsClassic())
     {
         Unit* target = GetTarget();
         if (!target || !bot->IsWithinCombatRange(target, 10.0f))

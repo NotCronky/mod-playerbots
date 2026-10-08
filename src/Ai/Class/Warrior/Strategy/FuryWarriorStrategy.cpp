@@ -81,8 +81,8 @@ void FuryWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
-    // 1.12: Execute comes before Bloodthirst and Whirlwind once the target is under 20%.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3: Execute comes before Bloodthirst and Whirlwind once the target is under 20%.
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("target critical health", { NextAction("execute", ACTION_HIGH + 8) }));
 
     triggers.push_back(

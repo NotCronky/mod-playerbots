@@ -20,8 +20,8 @@ void PriestNonCombatStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
     triggers.push_back(
         new TriggerNode("inner fire",{ NextAction("inner fire", 10.0f) }));
-    // 1.12's Vampiric Embrace goes on an enemy (the shadow debuff strategy casts it).
-    if (!PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3's Vampiric Embrace goes on an enemy (the shadow debuff strategy casts it).
+    if (!PlayerbotEra::IsClassic())
         triggers.push_back(
             new TriggerNode("vampiric embrace", { NextAction("vampiric embrace", 16.0f) }));
     triggers.push_back(new TriggerNode(

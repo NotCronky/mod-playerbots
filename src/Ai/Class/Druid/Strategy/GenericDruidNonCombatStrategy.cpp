@@ -212,6 +212,6 @@ void GenericDruidBuffStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
                        NextAction("thorns", 10.0f),
                        }));
 
-    if (PlayerbotEra::IsVanilla())
+    if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("omen of clarity", { NextAction("omen of clarity", 10.5f) }));
 }

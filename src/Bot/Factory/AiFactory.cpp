@@ -421,17 +421,17 @@ void AiFactory::AddDefaultCombatStrategies(Player* player, PlayerbotAI* const fa
     if (PlayerbotAI::IsMelee(player, true) && PlayerbotAI::IsDps(player, true))
         engine->addStrategy("behind", false);
 
-    // 1.12 tanks build a fraction of Wrath's threat: damage dealers hold back near the tank's threat instead of
-    // pulling the mob and spending their mana escaping it.
-    if (PlayerbotEra::IsVanilla() && PlayerbotAI::IsDps(player, true) && !rotation)
+    // 1.12 and 2.4.3 tanks build a fraction of Wrath's threat: damage dealers hold back near the tank's threat instead
+    // of pulling the mob and spending their mana escaping it.
+    if (PlayerbotEra::IsClassic() && PlayerbotAI::IsDps(player, true) && !rotation)
         engine->addStrategy("threat", false);
 
     if (PlayerbotAI::IsHeal(player, true) && !rotation)
     {
         if (sPlayerbotAIConfig.autoSaveMana)
             engine->addStrategy("save mana", false);
-        // 1.12 healers have no mana to spare for damage in a fight.
-        if (!sPlayerbotAIConfig.IsRestrictedHealerDPSMap(player->GetMapId()) && !PlayerbotEra::IsVanilla())
+        // 1.12 and 2.4.3 healers have no mana to spare for damage in a fight.
+        if (!sPlayerbotAIConfig.IsRestrictedHealerDPSMap(player->GetMapId()) && !PlayerbotEra::IsClassic())
             engine->addStrategy("healer dps", false);
     }
 

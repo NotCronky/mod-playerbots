@@ -64,7 +64,7 @@ class CastSwipeBearAction : public CastMeleeSpellAction
 public:
     // 1.12 names it plain "Swipe" (cats have none).
     CastSwipeBearAction(PlayerbotAI* botAI)
-        : CastMeleeSpellAction(botAI, PlayerbotEra::IsVanilla() ? "swipe" : "swipe (bear)") {}
+        : CastMeleeSpellAction(botAI, PlayerbotEra::IsClassic() ? "swipe" : "swipe (bear)") {}
 };
 
 class CastLacerateAction : public CastMeleeSpellAction

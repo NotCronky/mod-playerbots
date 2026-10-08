@@ -108,8 +108,8 @@ bool CastPowerWordShieldOnNotFullAction::isUseful()
 
 std::vector<NextAction> CastMindFlayAction::getPrerequisites()
 {
-    // 1.12 Mind Flay reaches 20 yards (30 from 2.0): step in from casting range to channel it.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 Mind Flay reaches 20 yards (30 from 3.0): step in from casting range to channel it.
+    if (PlayerbotEra::IsClassic())
         return { NextAction("reach mind flay") };
 
     return {};

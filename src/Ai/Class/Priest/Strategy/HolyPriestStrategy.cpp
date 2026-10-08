@@ -91,10 +91,10 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
 
-    // 1.12 (no Circle of Healing or Prayer of Mending): Heal for steady damage, Greater Heal saved for big deficits,
-    // Lesser Heal before Heal is learned.
-    bool const vanilla = PlayerbotEra::IsVanilla();
-    if (vanilla)
+    // 1.12 and 2.4.3: Heal for steady damage, Greater Heal saved for big deficits, Lesser Heal before Heal is learned
+    // (2.4.3's Circle of Healing and Prayer of Mending come from the group triggers below; 1.12 has neither).
+    bool const classic = PlayerbotEra::IsClassic();
+    if (classic)
         triggers.push_back(new TriggerNode("party member medium health", { NextAction("heal on party", ACTION_LIGHT_HEAL + 8),
                                                                           NextAction("lesser heal on party", ACTION_LIGHT_HEAL + 3) }));
 
@@ -151,7 +151,7 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             {
                 NextAction("circle of healing on party", ACTION_LIGHT_HEAL + 7),
                 NextAction("prayer of mending on party", ACTION_LIGHT_HEAL + 6),
-                NextAction("greater heal on party", vanilla ? ACTION_LIGHT_HEAL + 5 : ACTION_MEDIUM_HEAL + 5),
+                NextAction("greater heal on party", classic ? ACTION_LIGHT_HEAL + 5 : ACTION_MEDIUM_HEAL + 5),
                 NextAction("flash heal on party", ACTION_LIGHT_HEAL + 4),
             }
         )

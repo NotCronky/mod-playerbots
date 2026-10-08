@@ -102,11 +102,13 @@ DpsPaladinStrategy::DpsPaladinStrategy(PlayerbotAI* botAI) : GenericPaladinStrat
 
 std::vector<NextAction> DpsPaladinStrategy::getDefaultActions()
 {
-    // 1.12 has no Crusader Strike, Divine Storm or separate judgement spells; Exorcism only hits undead and demons.
-    if (PlayerbotEra::IsVanilla())
+    // 1.12 and 2.4.3 have no Divine Storm or separate judgement spells (Crusader Strike is 2.4.3's); Exorcism only hits
+    // undead and demons.
+    if (PlayerbotEra::IsClassic())
         return {
             NextAction("hammer of wrath", ACTION_DEFAULT + 0.6f),
             NextAction("judgement", ACTION_DEFAULT + 0.5f),
+            NextAction("crusader strike", ACTION_DEFAULT + 0.4f),
             NextAction("exorcism", ACTION_DEFAULT + 0.3f),
             NextAction("consecration", ACTION_DEFAULT + 0.1f),
             NextAction("melee", ACTION_DEFAULT)
@@ -126,9 +128,9 @@ void DpsPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
 
-    // 1.12: Seal of Command (Righteousness before the talent), judged on cooldown and resealed.
-    bool const vanilla = PlayerbotEra::IsVanilla();
-    if (vanilla)
+    // 1.12 and 2.4.3: Seal of Command (Righteousness before the talent), judged on cooldown and resealed.
+    bool const classic = PlayerbotEra::IsClassic();
+    if (classic)
         triggers.push_back(new TriggerNode("judgement", { NextAction("judgement", ACTION_HIGH + 2) }));
 
     triggers.push_back(
@@ -143,7 +145,7 @@ void DpsPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "seal",
             {
-                NextAction(vanilla ? "seal of command" : "seal of corruption", ACTION_HIGH)
+                NextAction(classic ? "seal of command" : "seal of corruption", ACTION_HIGH)
             }
         )
     );
