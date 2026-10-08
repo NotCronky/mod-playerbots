@@ -93,7 +93,11 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     // 1.12 and 2.4.3: Holy Shield kept up, Judgement of Righteousness then reseal (the "seal" trigger), and
     // Consecration with mana to spare.
     // Below medium mana it seals Wisdom instead, so each judgement and swing gives mana back.
+    // 2.4.3 (the TBC APL): Holy Shield > Consecration on cooldown > Judgement > Seal of Righteousness.
     bool const classic = PlayerbotEra::IsClassic();
+    bool const tbc = PlayerbotEra::IsTbc();
+    if (tbc)
+        triggers.push_back(new TriggerNode("consecration", { NextAction("consecration", ACTION_HIGH + 5) }));
     if (classic)
     {
         triggers.push_back(new TriggerNode("holy shield", { NextAction("holy shield", ACTION_HIGH + 6) }));
@@ -106,7 +110,7 @@ void TankPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "seal",
             {
-                NextAction("seal of corruption", ACTION_HIGH)
+                NextAction(tbc ? "seal of righteousness" : "seal of corruption", ACTION_HIGH)
             }
         )
     );

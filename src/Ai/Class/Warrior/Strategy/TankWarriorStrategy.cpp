@@ -128,12 +128,13 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     // 1.12 threat priority: Shield Slam (from 20 rage) > Revenge > Sunder Armor > Heroic Strike at 40 rage, with
     // Shield Block last (a 10 rage sink otherwise). There is no Devastate (Sunder Armor stands in) and Thunder Clap
     // is Battle Stance only.
+    // 2.4.3 (the TBC APL): Shield Block > Shield Slam > Revenge > Devastate > Heroic Strike, no Rend or Disarm.
     bool const vanilla = PlayerbotEra::IsVanilla();
-    if (vanilla)
-    {
+    bool const classic = PlayerbotEra::IsClassic();
+    if (classic)
         triggers.push_back(new TriggerNode("light rage available", { NextAction("shield slam", ACTION_HIGH + 4) }));
+    if (vanilla)
         triggers.push_back(new TriggerNode("medium rage available", { NextAction("heroic strike", ACTION_NORMAL + 3) }));
-    }
 
     triggers.push_back(
         new TriggerNode(
@@ -219,12 +220,13 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "revenge",
             {
-                NextAction("revenge", vanilla ? ACTION_HIGH + 3 : ACTION_HIGH + 2)
+                NextAction("revenge", classic ? ACTION_HIGH + 3 : ACTION_HIGH + 2)
             }
         )
     );
-    // 1.12: Disarm costs 20 rage and Rend 10 for little threat (and undead shrug Rend off): Sunder Armor gets it.
-    if (!vanilla)
+    // 1.12 and 2.4.3: Disarm costs 20 rage and Rend 10 for little threat (and undead shrug Rend off): Sunder Armor
+    // (Devastate) gets it.
+    if (!classic)
         triggers.push_back(
             new TriggerNode(
                 "disarm",
@@ -322,7 +324,7 @@ void TankWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    if (!vanilla)
+    if (!classic)
     {
         triggers.push_back(
             new TriggerNode(

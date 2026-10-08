@@ -23,6 +23,7 @@ public:
         creators["cleanse disease on party"] = &cleanse_disease_on_party;
         creators["seal of corruption"] = &seal_of_corruption;
         creators["seal of vengeance"] = &seal_of_vengeance;
+        creators["seal of blood"] = &seal_of_blood;
         creators["seal of command"] = &seal_of_command;
         creators["seal of wisdom"] = &seal_of_wisdom;
         creators["seal of justice"] = &seal_of_justice;
@@ -84,6 +85,13 @@ private:
     static ActionNode* seal_of_vengeance(PlayerbotAI* /* ai */)
     {
         return new ActionNode("seal of vengeance",
+                              /*P*/ {},
+                              /*A*/ { NextAction("seal of command") },
+                              /*C*/ {});
+    }
+    static ActionNode* seal_of_blood(PlayerbotAI* /* ai */)
+    {
+        return new ActionNode("seal of blood",
                               /*P*/ {},
                               /*A*/ { NextAction("seal of command") },
                               /*C*/ {});

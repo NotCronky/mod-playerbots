@@ -42,6 +42,18 @@ public:
     bool IsActive() override;
 };
 
+// Mana above a share of the maximum (the TBC APL's thresholds: Consecration above 40%, Arcane Blast above 30%).
+class ManaAbovePctTrigger : public Trigger
+{
+public:
+    ManaAbovePctTrigger(PlayerbotAI* botAI, uint8 pct, std::string const name) : Trigger(botAI, name), pct(pct) {}
+
+    bool IsActive() override;
+
+private:
+    uint8 pct;
+};
+
 class AlmostFullManaTrigger : public Trigger
 {
 public:

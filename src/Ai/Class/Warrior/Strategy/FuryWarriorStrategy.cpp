@@ -81,9 +81,17 @@ void FuryWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
-    // 1.12 and 2.4.3: Execute comes before Bloodthirst and Whirlwind once the target is under 20%.
-    if (PlayerbotEra::IsClassic())
+    // 1.12: Execute comes before Bloodthirst and Whirlwind once the target is under 20%. 2.4.3 (the TBC APL): Death
+    // Wish > Recklessness (on a dying target) > Bloodthirst > Whirlwind > Execute > Heroic Strike from 60 rage.
+    bool const tbc = PlayerbotEra::IsTbc();
+    if (PlayerbotEra::IsVanilla())
         triggers.push_back(new TriggerNode("target critical health", { NextAction("execute", ACTION_HIGH + 8) }));
+    if (tbc)
+    {
+        triggers.push_back(new TriggerNode("recklessness on dying target",
+                                           { NextAction("recklessness", ACTION_HIGH + 9) }));
+        triggers.push_back(new TriggerNode("target critical health", { NextAction("execute", ACTION_HIGH + 5) }));
+    }
 
     triggers.push_back(
         new TriggerNode(
@@ -166,7 +174,7 @@ void FuryWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     );
     triggers.push_back(
         new TriggerNode(
-            "medium rage available",
+            tbc ? "high rage available" : "medium rage available",
             {
                 NextAction("heroic strike", ACTION_DEFAULT + 0.1f)
             }
@@ -181,14 +189,15 @@ void FuryWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "recklessness",
-            {
-                NextAction("recklessness", ACTION_HIGH)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "recklessness",
+                {
+                    NextAction("recklessness", ACTION_HIGH)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "critical health",

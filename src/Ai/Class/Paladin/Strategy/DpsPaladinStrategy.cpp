@@ -104,6 +104,15 @@ std::vector<NextAction> DpsPaladinStrategy::getDefaultActions()
 {
     // 1.12 and 2.4.3 have no Divine Storm or separate judgement spells (Crusader Strike is 2.4.3's); Exorcism only hits
     // undead and demons.
+    // 2.4.3 (the TBC APL): Consecration only above 40% mana (a trigger).
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("crusader strike", ACTION_DEFAULT + 0.6f),
+            NextAction("judgement", ACTION_DEFAULT + 0.5f),
+            NextAction("hammer of wrath", ACTION_DEFAULT + 0.4f),
+            NextAction("exorcism", ACTION_DEFAULT + 0.3f),
+            NextAction("melee", ACTION_DEFAULT)
+        };
     if (PlayerbotEra::IsClassic())
         return {
             NextAction("hammer of wrath", ACTION_DEFAULT + 0.6f),
@@ -129,9 +138,17 @@ void DpsPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     GenericPaladinStrategy::InitTriggers(triggers);
 
     // 1.12 and 2.4.3: Seal of Command (Righteousness before the talent), judged on cooldown and resealed.
+    // 2.4.3 (the TBC APL): Crusader Strike > Judgement > reseal > Consecration above 40% mana. Seal twisting needs the
+    // swing timer, which the bot doesn't follow: one seal, Seal of Blood for the Horde, Seal of Command otherwise.
     bool const classic = PlayerbotEra::IsClassic();
+    bool const tbc = PlayerbotEra::IsTbc();
     if (classic)
         triggers.push_back(new TriggerNode("judgement", { NextAction("judgement", ACTION_HIGH + 2) }));
+    if (tbc)
+    {
+        triggers.push_back(new TriggerNode("crusader strike", { NextAction("crusader strike", ACTION_HIGH + 3) }));
+        triggers.push_back(new TriggerNode("consecration with mana", { NextAction("consecration", ACTION_HIGH + 1) }));
+    }
 
     triggers.push_back(
         new TriggerNode(
@@ -145,7 +162,7 @@ void DpsPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         new TriggerNode(
             "seal",
             {
-                NextAction(classic ? "seal of command" : "seal of corruption", ACTION_HIGH)
+                NextAction(tbc ? "seal of blood" : classic ? "seal of command" : "seal of corruption", ACTION_HIGH)
             }
         )
     );

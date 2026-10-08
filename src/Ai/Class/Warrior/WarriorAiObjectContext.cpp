@@ -96,6 +96,7 @@ public:
         creators["thunder clap and rage"] = &WarriorTriggerFactoryInternal::thunderclap_and_rage;
         creators["intercept can cast"] = &WarriorTriggerFactoryInternal::intercept_can_cast;
         creators["intercept and far enemy"] = &WarriorTriggerFactoryInternal::intercept_and_far_enemy;
+        creators["recklessness on dying target"] = &WarriorTriggerFactoryInternal::recklessness_on_dying_target;
         creators["intercept and rage"] = &WarriorTriggerFactoryInternal::intercept_and_rage;
         // creators["slam"] = &WarriorTriggerFactoryInternal::slam;
         creators["vigilance"] = &WarriorTriggerFactoryInternal::vigilance;
@@ -128,6 +129,10 @@ private:
         return new TwoTriggers(botAI, "thunder clap", "light rage available");
     }
     static Trigger* intercept_can_cast(PlayerbotAI* botAI) { return new InterceptCanCastTrigger(botAI); }
+    static Trigger* recklessness_on_dying_target(PlayerbotAI* botAI)
+    {
+        return new TwoTriggers(botAI, "recklessness", "target critical health");
+    }
     static Trigger* intercept_and_far_enemy(PlayerbotAI* botAI)
     {
         return new TwoTriggers(botAI, "enemy is out of melee", "intercept can cast");

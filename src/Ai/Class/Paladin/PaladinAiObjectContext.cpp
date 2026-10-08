@@ -142,6 +142,8 @@ public:
         creators["turn undead"] = &PaladinTriggerFactoryInternal::turn_undead;
         creators["avenger's shield"] = &PaladinTriggerFactoryInternal::avenger_shield;
         creators["consecration"] = &PaladinTriggerFactoryInternal::consecration;
+        creators["consecration with mana"] = &PaladinTriggerFactoryInternal::consecration_with_mana;
+        creators["crusader strike"] = &PaladinTriggerFactoryInternal::crusader_strike;
         creators["repentance on enemy healer"] = &PaladinTriggerFactoryInternal::repentance_on_enemy_healer;
         creators["repentance on snare target"] = &PaladinTriggerFactoryInternal::repentance_on_snare_target;
         creators["repentance interrupt"] = &PaladinTriggerFactoryInternal::repentance_interrupt;
@@ -210,6 +212,11 @@ private:
     }
     static Trigger* avenger_shield(PlayerbotAI* botAI) { return new AvengerShieldTrigger(botAI); }
     static Trigger* consecration(PlayerbotAI* botAI) { return new ConsecrationTrigger(botAI); }
+    static Trigger* consecration_with_mana(PlayerbotAI* botAI)
+    {
+        return new TwoTriggers(botAI, "consecration", "mana above 40");
+    }
+    static Trigger* crusader_strike(PlayerbotAI* botAI) { return new SpellCanBeCastTrigger(botAI, "crusader strike"); }
     static Trigger* repentance_on_enemy_healer(PlayerbotAI* botAI) { return new RepentanceOnHealerTrigger(botAI); }
     static Trigger* repentance_on_snare_target(PlayerbotAI* botAI) { return new RepentanceSnareTrigger(botAI); }
     static Trigger* repentance_interrupt(PlayerbotAI* botAI) { return new RepentanceInterruptTrigger(botAI); }
@@ -241,6 +248,7 @@ public:
     PaladinAiObjectContextInternal()
     {
         creators["seal of command"] = &PaladinAiObjectContextInternal::seal_of_command;
+        creators["seal of blood"] = &PaladinAiObjectContextInternal::seal_of_blood;
         creators["seal of vengeance"] = &PaladinAiObjectContextInternal::seal_of_vengeance;
         creators["seal of corruption"] = &PaladinAiObjectContextInternal::seal_of_corruption;
         creators["blessing of might"] = &PaladinAiObjectContextInternal::blessing_of_might;
@@ -336,6 +344,7 @@ private:
     static Action* divine_favor(PlayerbotAI* botAI) { return new CastDivineFavorAction(botAI); }
     static Action* righteous_fury(PlayerbotAI* botAI) { return new CastRighteousFuryAction(botAI); }
     static Action* seal_of_command(PlayerbotAI* botAI) { return new CastSealOfCommandAction(botAI); }
+    static Action* seal_of_blood(PlayerbotAI* botAI) { return new CastSealOfBloodAction(botAI); }
     static Action* seal_of_vengeance(PlayerbotAI* botAI) { return new CastSealOfVengeanceAction(botAI); }
     static Action* seal_of_corruption(PlayerbotAI* botAI) { return new CastSealOfCorruptionAction(botAI); }
     static Action* blessing_of_sanctuary(PlayerbotAI* botAI) { return new CastBlessingOfSanctuaryAction(botAI); }

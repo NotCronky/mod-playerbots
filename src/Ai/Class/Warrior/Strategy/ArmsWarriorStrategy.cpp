@@ -90,11 +90,15 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericWarriorStrategy::InitTriggers(triggers);
 
-    // 1.12 and 2.4.3: Execute > Mortal Strike > Overpower, with Rend only as a filler.
+    // 1.12: Execute > Mortal Strike > Overpower, with Rend only as a filler. 2.4.3 (the TBC APL): Berserker Stance
+    // for Whirlwind (Overpower and Rend need Battle Stance): Mortal Strike > Whirlwind > Execute > Slam.
     bool const classic = PlayerbotEra::IsClassic();
+    bool const tbc = PlayerbotEra::IsTbc();
     float const rend = classic ? ACTION_NORMAL + 1 : ACTION_HIGH + 8;
     float const mortalStrike = classic ? ACTION_HIGH + 5 : ACTION_HIGH + 3;
-    float const execute = classic ? ACTION_HIGH + 6 : ACTION_HIGH + 5;
+    float const execute = tbc ? ACTION_HIGH + 4 : classic ? ACTION_HIGH + 6 : ACTION_HIGH + 5;
+    if (tbc)
+        triggers.push_back(new TriggerNode("whirlwind", { NextAction("whirlwind", ACTION_HIGH + 4.5f) }));
 
     triggers.push_back(
         new TriggerNode(
@@ -107,9 +111,9 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
     triggers.push_back(
         new TriggerNode(
-            "battle stance",
+            tbc ? "berserker stance" : "battle stance",
             {
-                NextAction("battle stance", ACTION_HIGH + 10)
+                NextAction(tbc ? "berserker stance" : "battle stance", ACTION_HIGH + 10)
             }
         )
     );
@@ -123,23 +127,25 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "rend",
-            {
-                NextAction("rend", rend)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "rend",
+                {
+                    NextAction("rend", rend)
+                }
+            )
+        );
 
-    triggers.push_back(
-        new TriggerNode(
-            "rend on attacker",
-            {
-                NextAction("rend on attacker", rend)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "rend on attacker",
+                {
+                    NextAction("rend on attacker", rend)
+                }
+            )
+        );
 
     triggers.push_back(
         new TriggerNode(
@@ -177,23 +183,25 @@ void ArmsWarriorStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "overpower",
-            {
-                NextAction("overpower", ACTION_HIGH + 4)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "overpower",
+                {
+                    NextAction("overpower", ACTION_HIGH + 4)
+                }
+            )
+        );
 
-    triggers.push_back(
-        new TriggerNode(
-            "taste for blood",
-            {
-                NextAction("overpower", ACTION_HIGH + 4)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "taste for blood",
+                {
+                    NextAction("overpower", ACTION_HIGH + 4)
+                }
+            )
+        );
 
     triggers.push_back(
         new TriggerNode(

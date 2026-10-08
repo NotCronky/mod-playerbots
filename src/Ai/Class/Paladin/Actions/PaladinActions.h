@@ -17,6 +17,7 @@ BUFF_ACTION(CastSealOfLightAction, "seal of light");
 BUFF_ACTION(CastSealOfWisdomAction, "seal of wisdom");
 BUFF_ACTION(CastSealOfCommandAction, "seal of command");
 BUFF_ACTION(CastSealOfVengeanceAction, "seal of vengeance");
+BUFF_ACTION(CastSealOfBloodAction, "seal of blood");     // 2.4.3, Horde
 BUFF_ACTION(CastSealOfCorruptionAction, "seal of corruption");
 
 // judgements
