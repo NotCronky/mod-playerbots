@@ -14,6 +14,7 @@
 #include "Playerbots.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
+#include "Spell.h"
 
 bool KillCommandTrigger::IsActive()
 {
@@ -107,6 +108,20 @@ bool HunterLowAmmoTrigger::IsActive()
 bool HunterHasAmmoTrigger::IsActive()
 {
     return !AmmoCountTrigger::IsActive();
+}
+
+bool AutoShotTrigger::IsActive()
+{
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || !target->IsAlive() || !bot->IsInCombat())
+        return false;
+
+    // A shot would end Feign Death, which the hunter used to drop threat.
+    if (bot->HasAuraType(SPELL_AURA_FEIGN_DEATH))
+        return false;
+
+    Spell* autoRepeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+    return !autoRepeat || autoRepeat->m_targets.GetUnitTargetGUID() != target->GetGUID();
 }
 
 bool SwitchToRangedTrigger::IsActive()

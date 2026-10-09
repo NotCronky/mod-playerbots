@@ -182,10 +182,15 @@ public:
 
 // Damage/Combat Triggers
 
+// In combat with a live target that Auto Shot isn't already shooting: every kill drops the target (and with it Auto
+// Shot), and the "auto shot" default sat below everything else, so each new target waited on Hunter's Mark, the shots
+// and the range walk before the hunter fired. Auto Shot has no global cooldown and nothing else cancels it.
 class AutoShotTrigger : public Trigger
 {
 public:
     AutoShotTrigger(PlayerbotAI* botAI) : Trigger(botAI, "auto shot") {}
+
+    bool IsActive() override;
 };
 
 class SwitchToRangedTrigger : public Trigger

@@ -86,6 +86,7 @@ public:
         creators["has ammo"] = &HunterTriggerFactoryInternal::has_ammo;
         creators["switch to melee"] = &HunterTriggerFactoryInternal::switch_to_melee;
         creators["switch to ranged"] = &HunterTriggerFactoryInternal::switch_to_ranged;
+        creators["auto shot"] = &HunterTriggerFactoryInternal::auto_shot;
         creators["misdirection on main tank"] = &HunterTriggerFactoryInternal::misdirection_on_main_tank;
         creators["tranquilizing shot enrage"] = &HunterTriggerFactoryInternal::remove_enrage;
         creators["tranquilizing shot magic"] = &HunterTriggerFactoryInternal::remove_magic;

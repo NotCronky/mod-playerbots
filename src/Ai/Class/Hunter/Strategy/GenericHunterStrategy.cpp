@@ -58,6 +58,10 @@ void GenericHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     CombatStrategy::InitTriggers(triggers);
 
+    // Start Auto Shot on a new target before Hunter's Mark, the shots or a range walk (it costs no global cooldown,
+    // and the "auto shot" default ran only once nothing else could).
+    triggers.push_back(new TriggerNode("auto shot", { NextAction("auto shot", ACTION_MOVE + 0.5f) }));
+
     // Mark/Ammo/Mana Triggers
     triggers.push_back(new TriggerNode("no ammo", { NextAction("equip upgrades packet action", 30.0f) }));
     triggers.push_back(new TriggerNode("hunter's mark", { NextAction("hunter's mark", 29.5f) }));
