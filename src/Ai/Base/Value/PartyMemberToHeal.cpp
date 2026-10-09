@@ -5,6 +5,7 @@
  */
 
 #include "PartyMemberToHeal.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 
@@ -15,7 +16,7 @@ public:
     {
         for (uint8 i = 0; i < 3; ++i)
         {
-            if (spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL ||
+            if (PlayerbotEra::IsDirectHealEffect(spellInfo, i) ||
                 spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL_MAX_HEALTH ||
                 spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL_MECHANICAL)
                 return true;

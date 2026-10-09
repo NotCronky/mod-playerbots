@@ -5,6 +5,8 @@
  */
 
 #include "PlayerbotEra.h"
+#include "SharedDefines.h"
+#include "SpellInfo.h"
 
 #if __has_include("ProgressiveEra.h")
 #include "ProgressiveEra.h"
@@ -32,4 +34,15 @@ bool PlayerbotEra::IsTbc()
 bool PlayerbotEra::IsClassic()
 {
     return IsVanilla() || IsTbc();
+}
+
+bool PlayerbotEra::IsDirectHealEffect(SpellInfo const* spellInfo, uint8 effIndex)
+{
+    SpellEffectInfo const& effect = spellInfo->Effects[effIndex];
+    if (effect.Effect == SPELL_EFFECT_HEAL)
+        return true;
+
+    return IsVanilla() && effect.Effect == SPELL_EFFECT_SCRIPT_EFFECT
+        && spellInfo->SpellFamilyName == SPELLFAMILY_PALADIN
+        && effect.TargetA.GetTarget() == TARGET_UNIT_TARGET_ALLY;
 }

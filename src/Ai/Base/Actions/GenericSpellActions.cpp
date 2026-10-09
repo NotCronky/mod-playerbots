@@ -384,9 +384,9 @@ namespace
     float EstimatedHeal(Player* bot, SpellInfo const* info)
     {
         float amount = 0.0f;
-        for (SpellEffectInfo const& effect : info->GetEffects())
-            if (effect.Effect == SPELL_EFFECT_HEAL)
-                amount += effect.CalcValue(bot);
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            if (PlayerbotEra::IsDirectHealEffect(info, i))
+                amount += info->Effects[i].CalcValue(bot);
 
         float const castTime = std::min<float>(info->CalcCastTime(), 3500.0f);
         return amount + bot->SpellBaseHealingBonusDone(info->GetSchoolMask()) * castTime / 3500.0f;
@@ -397,7 +397,13 @@ namespace
     uint32 DownrankedHeal(Player* bot, uint32 spellId, Unit* target)
     {
         SpellInfo const* top = sSpellMgr->GetSpellInfo(spellId);
-        if (!top || !target || !top->HasEffect(SPELL_EFFECT_HEAL) || top->IsAffectingArea())
+        if (!top || !target || top->IsAffectingArea())
+            return spellId;
+
+        bool directHeal = false;
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            directHeal = directHeal || PlayerbotEra::IsDirectHealEffect(top, i);
+        if (!directHeal)
             return spellId;
 
         float const missing = float(target->GetMaxHealth() - target->GetHealth());

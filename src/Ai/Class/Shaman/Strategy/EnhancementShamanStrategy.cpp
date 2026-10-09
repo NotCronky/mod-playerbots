@@ -5,6 +5,7 @@
  */
 
 #include "EnhancementShamanStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 // ===== Action Node Factory =====
@@ -96,6 +97,16 @@ void EnhancementShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
             }
         )
     );
+    // 1.12 imbues last 5 minutes, so Windfury runs out in long fights: put it back without waiting for combat to end.
+    if (PlayerbotEra::IsVanilla())
+        triggers.push_back(
+            new TriggerNode(
+                "main hand weapon no imbue",
+                {
+                    NextAction("windfury weapon main hand", ACTION_HIGH + 1.0f)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "flame shock",

@@ -5,6 +5,7 @@
  */
 
 #include "PlayerbotAI.h"
+#include "PlayerbotEra.h"
 #include "AiFactory.h"
 #include "BudgetValues.h"
 #include "ChannelMgr.h"
@@ -329,7 +330,7 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
                         continue;
 
                     // Check if spell is a heal
-                    if (spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL ||
+                    if (PlayerbotEra::IsDirectHealEffect(spellInfo, i) ||
                         spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL_MAX_HEALTH ||
                         spellInfo->Effects[i].Effect == SPELL_EFFECT_HEAL_MECHANICAL)
                         isHeal = true;
