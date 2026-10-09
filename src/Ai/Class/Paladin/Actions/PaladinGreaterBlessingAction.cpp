@@ -10,6 +10,7 @@
 #include "Event.h"
 #include "GenericBuffUtils.h"
 #include "PaladinHelper.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
 #include "SpellAuraEffects.h"
@@ -23,7 +24,7 @@ namespace
 {
     constexpr uint32 GREATER_BLESSING_ASSIGNMENT_CACHE_MS = 4 * IN_MILLISECONDS;
     constexpr uint32 GREATER_BLESSING_PENDING_ASSIGNMENT_CACHE_MS = 500;
-    constexpr uint8 MAX_BLESSING_SLOTS = 4;
+    constexpr uint8 MAX_BLESSING_SLOTS = 5;
     constexpr uint8 MAX_CLASS_ID = 12;
 
     constexpr size_t BaseBlessingCategoryCount = MAX_BLESSING_SLOTS;
@@ -33,7 +34,8 @@ namespace
         PALADIN_BLESSING_CAPABILITY_NONE            = 0,
         PALADIN_BLESSING_CAPABILITY_IMPROVED_WISDOM = 1 << 0,
         PALADIN_BLESSING_CAPABILITY_IMPROVED_MIGHT  = 1 << 1,
-        PALADIN_BLESSING_CAPABILITY_SANCTUARY       = 1 << 2
+        PALADIN_BLESSING_CAPABILITY_SANCTUARY       = 1 << 2,
+        PALADIN_BLESSING_CAPABILITY_SALVATION       = 1 << 3
     };
 
     constexpr size_t BaseBlessingIndex(BaseBlessingCategory category)
@@ -83,6 +85,8 @@ namespace
         }
         if (player->HasSpell(ai::paladin::SPELL_BLESSING_OF_SANCTUARY))
             capabilities |= PALADIN_BLESSING_CAPABILITY_SANCTUARY;
+        if (PlayerbotEra::IsClassic() && player->HasSpell(ai::paladin::SPELL_HAND_OF_SALVATION))
+            capabilities |= PALADIN_BLESSING_CAPABILITY_SALVATION;
 
         return capabilities;
     }
@@ -115,6 +119,9 @@ namespace
 
             return 2;
         }
+
+        if (category == BASE_SALVATION && !(capabilities & PALADIN_BLESSING_CAPABILITY_SALVATION))
+            return std::numeric_limits<int>::min() / 4;
 
         if (category == BASE_MIGHT &&
             (capabilities & PALADIN_BLESSING_CAPABILITY_IMPROVED_MIGHT))
@@ -191,11 +198,12 @@ namespace
     };
 
     DesiredBlessingSet BuildDesiredBlessingSet(
-        RoleProfile role, uint8 paladinCount, bool anySanctuaryAvailable)
+        RoleProfile role, uint8 paladinCount, bool anySanctuaryAvailable, bool anySalvationAvailable)
     {
         DesiredBlessingSet desired;
 
-        auto const& priority = BASE_BLESSING_PRIORITIES[role];
+        auto const& priority = PlayerbotEra::IsClassic() ? CLASSIC_BLESSING_PRIORITIES[role]
+                                                         : BASE_BLESSING_PRIORITIES[role];
         uint8 requestedCount = std::min<uint8>(paladinCount, MAX_BLESSING_SLOTS);
 
         for (uint8 index = 0;
@@ -208,6 +216,8 @@ namespace
 
             if (category == BASE_SANCTUARY && !anySanctuaryAvailable)
                 category = BASE_KINGS;
+            if (category == BASE_SALVATION && !anySalvationAvailable)
+                continue;
 
             if (category == BASE_NONE || desired.wants[BaseBlessingIndex(category)])
                 continue;
@@ -481,7 +491,7 @@ namespace
         outExclusiveBasesByBucket.clear();
 
         uint8 const categoryMaskLimit =
-            static_cast<uint8>(1u << (static_cast<uint8>(BASE_SANCTUARY) + 1u));
+            static_cast<uint8>(1u << (static_cast<uint8>(BASE_LAST) + 1u));
         uint8 commonUnionMask = 0;
         ClassPlanPreference bestPreference;
         std::vector<int> bestClassWideOwners;
@@ -489,7 +499,7 @@ namespace
         std::vector<BaseBlessingCategory> bestClassWideBases;
         std::vector<std::vector<BaseBlessingCategory>> bestExclusiveBasesByBucket;
 
-        for (uint8 baseValue = BASE_MIGHT; baseValue <= BASE_SANCTUARY; ++baseValue)
+        for (uint8 baseValue = BASE_MIGHT; baseValue <= BASE_LAST; ++baseValue)
         {
             BaseBlessingCategory category = static_cast<BaseBlessingCategory>(baseValue);
             if (std::all_of(classBuckets.begin(), classBuckets.end(),
@@ -526,7 +536,7 @@ namespace
             }
 
             std::array<bool, BaseBlessingCategoryCount> promotedCommonBases = {};
-            for (uint8 baseValue = BASE_MIGHT; baseValue <= BASE_SANCTUARY; ++baseValue)
+            for (uint8 baseValue = BASE_MIGHT; baseValue <= BASE_LAST; ++baseValue)
             {
                 BaseBlessingCategory category = static_cast<BaseBlessingCategory>(baseValue);
                 promotedCommonBases[BaseBlessingIndex(category)] =
@@ -666,14 +676,12 @@ namespace
             std::min<uint8>(static_cast<uint8>(botPaladins.size()), MAX_BLESSING_SLOTS);
 
         bool anySanctuaryAvailable = false;
+        bool anySalvationAvailable = false;
         for (uint8 paladinIndex = 0; paladinIndex < activePaladinCount; ++paladinIndex)
         {
-            if (GetPaladinBlessingCapabilities(botPaladins[paladinIndex]) &
-                PALADIN_BLESSING_CAPABILITY_SANCTUARY)
-            {
-                anySanctuaryAvailable = true;
-                break;
-            }
+            uint8 const capabilities = GetPaladinBlessingCapabilities(botPaladins[paladinIndex]);
+            anySanctuaryAvailable |= (capabilities & PALADIN_BLESSING_CAPABILITY_SANCTUARY) != 0;
+            anySalvationAvailable |= (capabilities & PALADIN_BLESSING_CAPABILITY_SALVATION) != 0;
         }
 
         int mySlot = -1;
@@ -703,7 +711,7 @@ namespace
             bucket.byRole = UsesRoleBucket(classId);
             bucket.memberCount = 1;
             bucket.desired = BuildDesiredBlessingSet(
-                member.role, activePaladinCount, anySanctuaryAvailable);
+                member.role, activePaladinCount, anySanctuaryAvailable, anySalvationAvailable);
 
             if (!bucket.byRole)
                 bucket.role = ROLE_CASTER;

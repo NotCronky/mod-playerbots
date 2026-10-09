@@ -11,6 +11,9 @@
 
 class PlayerbotAI;
 
+// 1.12, Discipline heal triggers.
+void AddVanillaPriestHealTriggers(std::vector<TriggerNode*>& triggers);
+
 class HealPriestStrategy : public GenericPriestStrategy
 {
 public:

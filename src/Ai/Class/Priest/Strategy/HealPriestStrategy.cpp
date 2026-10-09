@@ -21,9 +21,44 @@ std::vector<NextAction> HealPriestStrategy::getDefaultActions()
     };
 }
 
+// 1.12, Discipline: Power Word: Shield only on someone about to die (it cost a disc priest a third of its casts and most
+// of its mana when it went on every hurt member), Prayer of Healing on group damage, Greater Heal or Flash Heal for big
+// deficits, Heal (Lesser Heal before it) for steady damage, Renew on the lightly hurt. No Penance or Prayer of Mending.
+void AddVanillaPriestHealTriggers(std::vector<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode("party member to heal out of spell range",
+                                       { NextAction("reach party member to heal", ACTION_CRITICAL_HEAL + 10) }));
+    triggers.push_back(new TriggerNode("medium group heal setting",
+                                       { NextAction("prayer of healing on party", ACTION_CRITICAL_HEAL + 4) }));
+    triggers.push_back(new TriggerNode("party member critical health",
+                                       {
+                                           NextAction("power word: shield on party", ACTION_CRITICAL_HEAL + 5),
+                                           NextAction("flash heal on party", ACTION_CRITICAL_HEAL + 2)
+                                       }));
+    triggers.push_back(new TriggerNode("party member low health",
+                                       {
+                                           NextAction("greater heal on party", ACTION_MEDIUM_HEAL + 1),
+                                           NextAction("flash heal on party", ACTION_MEDIUM_HEAL + 0)
+                                       }));
+    triggers.push_back(new TriggerNode("party member medium health",
+                                       {
+                                           NextAction("heal on party", ACTION_LIGHT_HEAL + 4),
+                                           NextAction("lesser heal on party", ACTION_LIGHT_HEAL + 3),
+                                           NextAction("renew on party", ACTION_LIGHT_HEAL + 2)
+                                       }));
+    triggers.push_back(new TriggerNode("party member almost full health",
+                                       { NextAction("renew on party", ACTION_LIGHT_HEAL + 1) }));
+}
+
 void HealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
+
+    if (PlayerbotEra::IsVanilla())
+    {
+        AddVanillaPriestHealTriggers(triggers);
+        return;
+    }
 
     // 1.12 and 2.4.3 have no Penance (nor 1.12 Prayer of Mending): Greater Heal for big deficits, Heal (Lesser Heal
     // before it) for steady damage, Renew on the lightly hurt.

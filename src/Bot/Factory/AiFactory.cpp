@@ -544,7 +544,11 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     switch (player->getClass())
     {
         case CLASS_PRIEST:
-            nonCombatEngine->addStrategiesNoInit("dps assist", "cure", "rshadow", nullptr);
+            nonCombatEngine->addStrategiesNoInit("dps assist", "cure", nullptr);
+            // 1.12 and 2.4.3: Shadow Protection on everyone, every rebuff, was the biggest out-of-combat mana sink of
+            // vanilla healers (Molten Core census). Only where the fight needs it (the strategy can be turned on).
+            if (!PlayerbotEra::IsClassic())
+                nonCombatEngine->addStrategy("rshadow", false);
             break;
         case CLASS_PALADIN:
             if (tab == PALADIN_TAB_PROTECTION)

@@ -296,6 +296,12 @@ bool GroupBuffSpellAction::isUseful()
     if (!target || !CastSpellAction::isUseful())
         return false;
 
+    // 1.12 and 2.4.3: buffing others waits for mana, so a healer drinks instead of starting the pull drained (and
+    // instead of retrying an unaffordable buff: thousands of out-of-mana refusals per Molten Core census run).
+    if (PlayerbotEra::IsClassic() && target != bot && bot->GetMaxPower(POWER_MANA) &&
+        AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana)
+        return false;
+
     if (ai::buff::IsGroupVariantEnabled(bot, spell))
     {
         std::string const groupVariant = ai::buff::GroupVariantFor(spell);
@@ -379,31 +385,45 @@ bool CastHealingSpellAction::isUseful() { return CastAuraSpellAction::isUseful()
 
 namespace
 {
-    // What one cast of a direct heal rank restores: its base amount plus the caster's +healing scaled by cast time
-    // (the 1.12 coefficient, at most 3.5 seconds' worth).
+    // What one cast of a heal rank restores: its direct heal plus the caster's +healing scaled by cast time (the 1.12
+    // coefficient, at most 3.5 seconds' worth), and its heal over time in full plus +healing scaled by duration (15
+    // seconds' worth at most).
     float EstimatedHeal(Player* bot, SpellInfo const* info)
     {
-        float amount = 0.0f;
+        float direct = 0.0f;
+        float periodic = 0.0f;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            SpellEffectInfo const& effect = info->Effects[i];
             if (PlayerbotEra::IsDirectHealEffect(info, i))
-                amount += info->Effects[i].CalcValue(bot);
+                direct += effect.CalcValue(bot);
+            else if (effect.ApplyAuraName == SPELL_AURA_PERIODIC_HEAL && effect.Amplitude > 0)
+                periodic += effect.CalcValue(bot) * float(info->GetMaxDuration() / effect.Amplitude);
+        }
 
-        float const castTime = std::min<float>(info->CalcCastTime(), 3500.0f);
-        return amount + bot->SpellBaseHealingBonusDone(info->GetSchoolMask()) * castTime / 3500.0f;
+        float const bonus = bot->SpellBaseHealingBonusDone(info->GetSchoolMask());
+        float amount = direct + periodic;
+        if (direct > 0.0f)
+            amount += bonus * std::min<float>(info->CalcCastTime(), 3500.0f) / 3500.0f;
+        if (periodic > 0.0f)
+            amount += bonus * std::min<float>(info->GetMaxDuration(), 15000.0f) / 15000.0f;
+        return amount;
     }
 
     // 1.12 healers live on downranking: the lowest known rank that covers the target's missing health, the
-    // highest when none does. Heals over time, group heals and anything without a direct heal keep their rank.
+    // highest when none does. Heals over time downrank the same way, by their whole heal (Renew, Rejuvenation: the
+    // max rank on every lightly hurt member drained vanilla healers). Group heals keep their rank.
     uint32 DownrankedHeal(Player* bot, uint32 spellId, Unit* target)
     {
         SpellInfo const* top = sSpellMgr->GetSpellInfo(spellId);
         if (!top || !target || top->IsAffectingArea())
             return spellId;
 
-        bool directHeal = false;
+        bool heals = false;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-            directHeal = directHeal || PlayerbotEra::IsDirectHealEffect(top, i);
-        if (!directHeal)
+            heals = heals || PlayerbotEra::IsDirectHealEffect(top, i) ||
+                    top->Effects[i].ApplyAuraName == SPELL_AURA_PERIODIC_HEAL;
+        if (!heals)
             return spellId;
 
         float const missing = float(target->GetMaxHealth() - target->GetHealth());

@@ -35,12 +35,20 @@ bool CastTravelFormAction::isUseful()
 bool CastCasterFormAction::Execute(Event /*event*/)
 {
     botAI->RemoveShapeshift();
+    // RemoveShapeshift keeps Tree of Life; isUseful only asks for this out of combat on the classic realms.
+    if (PlayerbotEra::IsClassic() && !bot->IsInCombat())
+        botAI->RemoveAura("tree of life");
     return true;
 }
 
 bool CastCasterFormAction::isUseful()
 {
-    if (!botAI->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form",
+    // 2.4.3's Tree of Life blocks Mark of the Wild, Thorns and Omen of Clarity: out of combat the druid leaves it to
+    // buff (TBC census: 450+ refusals each). Not in combat, where the heals this prerequisite also guards are
+    // castable in the tree and leaving it would cost it.
+    bool const leaveTree = PlayerbotEra::IsClassic() && !bot->IsInCombat() && botAI->HasAura("tree of life", bot);
+    if (!leaveTree &&
+        !botAI->HasAnyAuraOf(GetTarget(), "dire bear form", "bear form", "cat form", "travel form", "aquatic form",
                              "flight form", "swift flight form", "moonkin form", nullptr))
         return false;
 

@@ -41,7 +41,9 @@ namespace ai::gbless
         BLESSING_KINGS_SINGLE      = 5,
         BLESSING_KINGS_GREATER     = 6,
         BLESSING_SANCTUARY_SINGLE  = 7,
-        BLESSING_SANCTUARY_GREATER = 8
+        BLESSING_SANCTUARY_GREATER = 8,
+        BLESSING_SALVATION_SINGLE  = 9,
+        BLESSING_SALVATION_GREATER = 10
     };
 
     enum BaseBlessingCategory : uint8
@@ -50,7 +52,9 @@ namespace ai::gbless
         BASE_MIGHT     = 1,
         BASE_WISDOM    = 2,
         BASE_KINGS     = 3,
-        BASE_SANCTUARY = 4
+        BASE_SANCTUARY = 4,
+        BASE_SALVATION = 5,         // 1.12 and 2.4.3 only (3.0 made it a short Hand)
+        BASE_LAST      = BASE_SALVATION
     };
 
     inline constexpr BaseBlessingCategory BaseBlessingOf(BlessingType type)
@@ -65,6 +69,8 @@ namespace ai::gbless
             case BLESSING_KINGS_GREATER:      return BASE_KINGS;
             case BLESSING_SANCTUARY_SINGLE:
             case BLESSING_SANCTUARY_GREATER:  return BASE_SANCTUARY;
+            case BLESSING_SALVATION_SINGLE:
+            case BLESSING_SALVATION_GREATER:  return BASE_SALVATION;
             default:                          return BASE_NONE;
         }
     }
@@ -72,13 +78,15 @@ namespace ai::gbless
     inline constexpr bool IsSingleVariant(BlessingType type)
     {
         return type == BLESSING_MIGHT_SINGLE || type == BLESSING_WISDOM_SINGLE ||
-               type == BLESSING_KINGS_SINGLE || type == BLESSING_SANCTUARY_SINGLE;
+               type == BLESSING_KINGS_SINGLE || type == BLESSING_SANCTUARY_SINGLE ||
+               type == BLESSING_SALVATION_SINGLE;
     }
 
     inline constexpr bool IsGreaterVariant(BlessingType type)
     {
         return type == BLESSING_MIGHT_GREATER || type == BLESSING_WISDOM_GREATER ||
-               type == BLESSING_KINGS_GREATER || type == BLESSING_SANCTUARY_GREATER;
+               type == BLESSING_KINGS_GREATER || type == BLESSING_SANCTUARY_GREATER ||
+               type == BLESSING_SALVATION_GREATER;
     }
 
     inline constexpr BlessingType ToSingleVariant(BaseBlessingCategory category)
@@ -89,6 +97,7 @@ namespace ai::gbless
             case BASE_WISDOM:    return BLESSING_WISDOM_SINGLE;
             case BASE_KINGS:     return BLESSING_KINGS_SINGLE;
             case BASE_SANCTUARY: return BLESSING_SANCTUARY_SINGLE;
+            case BASE_SALVATION: return BLESSING_SALVATION_SINGLE;
             default:             return BLESSING_NONE;
         }
     }
@@ -106,6 +115,7 @@ namespace ai::gbless
             case BASE_WISDOM:    return BLESSING_WISDOM_GREATER;
             case BASE_KINGS:     return BLESSING_KINGS_GREATER;
             case BASE_SANCTUARY: return BLESSING_SANCTUARY_GREATER;
+            case BASE_SALVATION: return BLESSING_SALVATION_GREATER;
             default:             return BLESSING_NONE;
         }
     }
@@ -127,29 +137,49 @@ namespace ai::gbless
             case BLESSING_KINGS_GREATER:     return "greater blessing of kings";
             case BLESSING_SANCTUARY_SINGLE:  return "blessing of sanctuary";
             case BLESSING_SANCTUARY_GREATER: return "greater blessing of sanctuary";
+            case BLESSING_SALVATION_SINGLE:  return "blessing of salvation";
+            case BLESSING_SALVATION_GREATER: return "greater blessing of salvation";
             default:                         return "";
         }
     }
 
     struct BaseBlessingPriorityEntry
     {
-        BaseBlessingCategory priorities[4];
+        BaseBlessingCategory priorities[5];
     };
 
     inline constexpr BaseBlessingPriorityEntry BASE_BLESSING_PRIORITIES[ROLE_PROFILE_COUNT] =
     {
         // All casters
-        {{ BASE_KINGS,     BASE_WISDOM, BASE_SANCTUARY, BASE_MIGHT     }},
+        {{ BASE_KINGS,     BASE_WISDOM, BASE_SANCTUARY, BASE_MIGHT,     BASE_NONE }},
         // Physical DPS (no mana)
-        {{ BASE_MIGHT,     BASE_KINGS,  BASE_SANCTUARY, BASE_NONE      }},
+        {{ BASE_MIGHT,     BASE_KINGS,  BASE_SANCTUARY, BASE_NONE,      BASE_NONE }},
         // Hybrid DPS
-        {{ BASE_MIGHT,     BASE_KINGS,  BASE_WISDOM,    BASE_SANCTUARY }},
+        {{ BASE_MIGHT,     BASE_KINGS,  BASE_WISDOM,    BASE_SANCTUARY, BASE_NONE }},
         // Druid tanks
-        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_WISDOM,   }},
+        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_WISDOM,    BASE_NONE }},
         // Warrior and DK tanks
-        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_NONE      }},
+        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_NONE,      BASE_NONE }},
         // Paladin tanks
-        {{ BASE_SANCTUARY, BASE_MIGHT,  BASE_WISDOM,    BASE_KINGS     }},
+        {{ BASE_SANCTUARY, BASE_MIGHT,  BASE_WISDOM,    BASE_KINGS,     BASE_NONE }},
+    };
+
+    // 1.12 and 2.4.3: Salvation first for everyone who isn't a tank (in vanilla raids the threat limit, not damage,
+    // holds DPS back; healers draw threat from every heal). Tanks never get it.
+    inline constexpr BaseBlessingPriorityEntry CLASSIC_BLESSING_PRIORITIES[ROLE_PROFILE_COUNT] =
+    {
+        // All casters
+        {{ BASE_SALVATION, BASE_KINGS,  BASE_WISDOM,    BASE_SANCTUARY, BASE_MIGHT     }},
+        // Physical DPS (no mana)
+        {{ BASE_SALVATION, BASE_MIGHT,  BASE_KINGS,     BASE_SANCTUARY, BASE_NONE      }},
+        // Hybrid DPS
+        {{ BASE_SALVATION, BASE_MIGHT,  BASE_KINGS,     BASE_WISDOM,    BASE_SANCTUARY }},
+        // Druid tanks
+        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_WISDOM,    BASE_NONE      }},
+        // Warrior and DK tanks
+        {{ BASE_KINGS,     BASE_MIGHT,  BASE_SANCTUARY, BASE_NONE,      BASE_NONE      }},
+        // Paladin tanks
+        {{ BASE_SANCTUARY, BASE_MIGHT,  BASE_WISDOM,    BASE_KINGS,     BASE_NONE      }},
     };
 
     constexpr uint32 SPELL_IMPROVED_MIGHT_R1  = 20042;

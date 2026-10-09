@@ -23,17 +23,20 @@ void HealPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPaladinStrategy::InitTriggers(triggers);
 
-    // 1.12 and 2.4.3: a seal only pays off for a paladin that melees, so it comes after every heal.
+    // 1.12 and 2.4.3: a seal only pays off for a paladin that melees, so it comes after every heal. A 1.12 holy
+    // paladin keeps none: it never judges it off, and the reseal ate its mana (Molten Core census: 534 Seals of
+    // Wisdom and 3154 out-of-mana retries).
     bool const classic = PlayerbotEra::IsClassic();
 
-    triggers.push_back(
-        new TriggerNode(
-            "seal",
-            {
-                NextAction("seal of wisdom", classic ? ACTION_NORMAL : ACTION_HIGH),
-            }
-        )
-    );
+    if (!PlayerbotEra::IsVanilla())
+        triggers.push_back(
+            new TriggerNode(
+                "seal",
+                {
+                    NextAction("seal of wisdom", classic ? ACTION_NORMAL : ACTION_HIGH),
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "medium mana",
