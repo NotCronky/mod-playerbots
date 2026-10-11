@@ -9,6 +9,7 @@
 #include "Player.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SpellMgr.h"
 
 bool MarkOfTheWildTrigger::IsActive()
 {
@@ -52,6 +53,54 @@ bool BlanketHotTrigger::IsActive()
         return false;
 
     return GetTarget();
+}
+
+bool FerociousBiteDyingTargetTrigger::IsActive()
+{
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || !target->IsAlive() || AI_VALUE2(uint8, "combo", "current target") < 5)
+        return false;
+
+    return target->GetHealth() / AI_VALUE(float, "estimated group dps") <= 10.0f;
+}
+
+bool PowershiftTrigger::IsActive()
+{
+    constexpr uint32 FUROR_ICON = 238;
+    constexpr int32 POWERSHIFT_MIN_MANA = 500;
+
+    if (!bot->IsInCombat() || !botAI->HasAura("cat form", bot) || botAI->HasAura("clearcasting", bot))
+        return false;
+
+    if (AI_VALUE2(uint8, "energy", "self target") > 20 ||
+        !bot->GetDummyAuraEffect(SPELLFAMILY_DRUID, FUROR_ICON, EFFECT_0))
+        return false;
+
+    SpellInfo const* catForm = sSpellMgr->GetSpellInfo(AI_VALUE2(uint32, "spell id", "cat form"));
+    if (!catForm || bot->GetGlobalCooldownMgr().HasGlobalCooldown(catForm))
+        return false;
+
+    int32 const mana = bot->GetPower(POWER_MANA);
+    return mana > POWERSHIFT_MIN_MANA && mana >= catForm->CalcPowerCost(bot, catForm->GetSchoolMask());
+}
+
+bool SwipeBearFillerTrigger::IsActive()
+{
+    if (!bot->IsInCombat() || !botAI->HasAnyAuraOf(bot, "bear form", "dire bear form", nullptr))
+        return false;
+
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || !target->IsAlive() || AI_VALUE2(uint8, "rage", "self target") < 15)
+        return false;
+
+    uint32 const mangle = AI_VALUE2(uint32, "spell id", "mangle (bear)");
+    return !mangle || bot->HasSpellCooldown(mangle);
+}
+
+bool LifebloomOnMainTankTrigger::IsActive()
+{
+    Unit* tank = AI_VALUE(Unit*, "main tank");
+    return tank && tank->IsAlive() && tank->IsInCombat();
 }
 
 bool AquaticFormTrigger::IsActive()

@@ -31,8 +31,11 @@ void AfflictionWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
     GenericWarlockStrategy::InitTriggers(triggers);
 
     // 1.12 has no Unstable Affliction, and neither has Haunt: Siphon Life is kept up too.
+    // 2.4.3 (the TBC APL): curse (the curse strategy) > Corruption > Unstable Affliction > Siphon Life > Shadow Bolt;
+    // no Drain Soul.
+    bool const tbc = PlayerbotEra::IsTbc();
     if (PlayerbotEra::IsClassic())
-        triggers.push_back(new TriggerNode("siphon life", { NextAction("siphon life", 17.5f) }));
+        triggers.push_back(new TriggerNode("siphon life", { NextAction("siphon life", tbc ? 17.2f : 17.5f) }));
 
     // Main DoT triggers for high uptime
     triggers.push_back(
@@ -85,14 +88,15 @@ void AfflictionWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "target critical health",
-            {
-                NextAction("drain soul", 15.5f)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "target critical health",
+                {
+                    NextAction("drain soul", 15.5f)
+                }
+            )
+        );
 
     // Life Tap glyph buff, and Life Tap as filler
     triggers.push_back(

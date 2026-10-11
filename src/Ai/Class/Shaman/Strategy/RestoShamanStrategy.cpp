@@ -28,23 +28,51 @@ void RestoShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode("medium mana", { NextAction("mana tide totem", ACTION_HIGH + 5) }));
 
     // Healing Triggers
-    triggers.push_back(new TriggerNode("group heal setting", { NextAction("riptide on party", 27.0f),
-                                                               NextAction("chain heal on party", 26.0f) }));
+    // 2.4.3 (the TBC APL): Nature's Swiftness (then Healing Wave) at critical health > Chain Heal on group damage >
+    // Lesser Healing Wave under 65% > Healing Wave.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("party member critical health",
+                                           { NextAction("nature's swiftness", 25.5f) }));
+        triggers.push_back(new TriggerNode("nature's swiftness active",
+                                           { NextAction("healing wave on party", 25.4f) }));
+        triggers.push_back(new TriggerNode("group heal setting", { NextAction("chain heal on party", 26.0f) }));
+        triggers.push_back(new TriggerNode("party member critical health",
+                                           { NextAction("lesser healing wave on party", 24.0f),
+                                             NextAction("healing wave on party", 23.0f) }));
+        triggers.push_back(new TriggerNode("party member low health",
+                                           { NextAction("lesser healing wave on party", 18.0f),
+                                             NextAction("healing wave on party", 17.0f) }));
+        triggers.push_back(new TriggerNode("party member medium health",
+                                           { NextAction("lesser healing wave on party", 15.0f),
+                                             NextAction("healing wave on party", 14.0f) }));
+        triggers.push_back(new TriggerNode("party member almost full health",
+                                           { NextAction("healing wave on party", 11.0f) }));
+    }
+    else
+    {
+        triggers.push_back(new TriggerNode("group heal setting", { NextAction("riptide on party", 27.0f),
+                                                                   NextAction("chain heal on party", 26.0f) }));
 
-    triggers.push_back(new TriggerNode("party member critical health", { NextAction("riptide on party", 25.0f),
-                                                                         NextAction("healing wave on party", 24.0f),
-                                                                         NextAction("lesser healing wave on party", 23.0f) }));
+        triggers.push_back(new TriggerNode("party member critical health",
+                                           { NextAction("riptide on party", 25.0f),
+                                             NextAction("healing wave on party", 24.0f),
+                                             NextAction("lesser healing wave on party", 23.0f) }));
 
-    triggers.push_back(new TriggerNode("party member low health", { NextAction("riptide on party", 19.0f),
-                                                                    NextAction("healing wave on party", 18.0f),
-                                                                    NextAction("lesser healing wave on party", 17.0f) }));
+        triggers.push_back(new TriggerNode("party member low health",
+                                           { NextAction("riptide on party", 19.0f),
+                                             NextAction("healing wave on party", 18.0f),
+                                             NextAction("lesser healing wave on party", 17.0f) }));
 
-    triggers.push_back(new TriggerNode("party member medium health", { NextAction("riptide on party", 16.0f),
-                                                                       NextAction("healing wave on party", 15.0f),
-                                                                       NextAction("lesser healing wave on party", 14.0f) }));
+        triggers.push_back(new TriggerNode("party member medium health",
+                                           { NextAction("riptide on party", 16.0f),
+                                             NextAction("healing wave on party", 15.0f),
+                                             NextAction("lesser healing wave on party", 14.0f) }));
 
-    triggers.push_back(new TriggerNode("party member almost full health", { NextAction("riptide on party", 12.0f),
-                                                                            NextAction("lesser healing wave on party", 11.0f) }));
+        triggers.push_back(new TriggerNode("party member almost full health",
+                                           { NextAction("riptide on party", 12.0f),
+                                             NextAction("lesser healing wave on party", 11.0f) }));
+    }
 
     triggers.push_back(new TriggerNode("earth shield on main tank", { NextAction("earth shield on main tank", ACTION_HIGH + 7) }));
 

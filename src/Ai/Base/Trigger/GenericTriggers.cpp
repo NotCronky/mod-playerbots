@@ -86,6 +86,11 @@ bool ManaAbovePctTrigger::IsActive()
     return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") > pct;
 }
 
+bool ManaBelowPctTrigger::IsActive()
+{
+    return AI_VALUE2(bool, "has mana", "self target") && AI_VALUE2(uint8, "mana", "self target") < pct;
+}
+
 bool EnoughManaTrigger::IsActive()
 {
     return AI_VALUE2(bool, "has mana", "self target") &&

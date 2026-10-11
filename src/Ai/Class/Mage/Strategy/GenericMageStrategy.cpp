@@ -140,7 +140,14 @@ void MageBoostStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
     if (tab == MAGE_TAB_ARCANE)
     {
-        triggers.push_back(new TriggerNode("arcane power", { NextAction("arcane power", 29.0f) }));
+        // 2.4.3 (the TBC APL): Arcane Power above 40% mana, Presence of Mind under it.
+        if (PlayerbotEra::IsTbc())
+        {
+            triggers.push_back(new TriggerNode("arcane power with mana", { NextAction("arcane power", 29.0f) }));
+            triggers.push_back(new TriggerNode("arcane power active", { NextAction("presence of mind", 28.8f) }));
+        }
+        else
+            triggers.push_back(new TriggerNode("arcane power", { NextAction("arcane power", 29.0f) }));
         triggers.push_back(new TriggerNode("icy veins", { NextAction("icy veins", 28.5f) }));
         triggers.push_back(new TriggerNode("mirror image", { NextAction("mirror image", 28.0f) }));
     }

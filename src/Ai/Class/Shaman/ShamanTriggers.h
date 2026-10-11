@@ -10,6 +10,7 @@
 #include "CureTriggers.h"
 #include "GenericTriggers.h"
 #include "PlayerbotAI.h"
+#include "PlayerbotEra.h"
 #include "SharedDefines.h"
 #include "TotemsShamanStrategy.h"
 #include "Trigger.h"
@@ -229,8 +230,10 @@ public:
 class FlameShockTrigger : public DebuffTrigger
 {
 public:
-    FlameShockTrigger(PlayerbotAI* botAI) : DebuffTrigger(botAI, "flame shock", 1, true, 6.0f) {}
-    bool IsActive() override { return BuffTrigger::IsActive(); }
+    // 2.4.3 (the TBC APL): only on targets that live 12 seconds.
+    FlameShockTrigger(PlayerbotAI* botAI)
+        : DebuffTrigger(botAI, "flame shock", 1, true, PlayerbotEra::IsTbc() ? 12.0f : 6.0f) {}
+    bool IsActive() override { return PlayerbotEra::IsTbc() ? DebuffTrigger::IsActive() : BuffTrigger::IsActive(); }
 };
 
 class EarthShockExecuteTrigger : public Trigger

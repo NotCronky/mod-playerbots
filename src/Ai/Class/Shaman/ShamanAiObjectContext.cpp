@@ -175,6 +175,8 @@ public:
         creators["totemic recall"] = &ShamanATriggerFactoryInternal::totemic_recall;
         creators["no earth totem"] = &ShamanATriggerFactoryInternal::no_earth_totem;
         creators["no fire totem"] = &ShamanATriggerFactoryInternal::no_fire_totem;
+        creators["no fire totem with mana"] = &ShamanATriggerFactoryInternal::no_fire_totem_with_mana;
+        creators["nature's swiftness active"] = &ShamanATriggerFactoryInternal::natures_swiftness_active;
         creators["no water totem"] = &ShamanATriggerFactoryInternal::no_water_totem;
         creators["no air totem"] = &ShamanATriggerFactoryInternal::no_air_totem;
         creators["set strength of earth totem"] = &ShamanATriggerFactoryInternal::set_strength_of_earth_totem;
@@ -236,6 +238,14 @@ private:
     static Trigger* totemic_recall(PlayerbotAI* botAI) { return new TotemicRecallTrigger(botAI); }
     static Trigger* no_earth_totem(PlayerbotAI* botAI) { return new NoEarthTotemTrigger(botAI); }
     static Trigger* no_fire_totem(PlayerbotAI* botAI) { return new NoFireTotemTrigger(botAI); }
+    static Trigger* no_fire_totem_with_mana(PlayerbotAI* botAI)
+    {
+        return new TwoTriggers(botAI, "no fire totem", "mana above 40");
+    }
+    static Trigger* natures_swiftness_active(PlayerbotAI* botAI)
+    {
+        return new HasAuraTrigger(botAI, "nature's swiftness");
+    }
     static Trigger* no_water_totem(PlayerbotAI* botAI) { return new NoWaterTotemTrigger(botAI); }
     static Trigger* no_air_totem(PlayerbotAI* botAI) { return new NoAirTotemTrigger(botAI); }
     static Trigger* set_strength_of_earth_totem(PlayerbotAI* botAI) { return new SetStrengthOfEarthTotemTrigger(botAI); }
@@ -329,6 +339,7 @@ public:
         creators["mana spring totem"] = &ShamanAiObjectContextInternal::mana_spring_totem;
         creators["cleansing totem"] = &ShamanAiObjectContextInternal::cleansing_totem;
         creators["mana tide totem"] = &ShamanAiObjectContextInternal::mana_tide_totem;
+        creators["nature's swiftness"] = &ShamanAiObjectContextInternal::natures_swiftness;
         creators["fire resistance totem"] = &ShamanAiObjectContextInternal::fire_resistance_totem;
         creators["wrath of air totem"] = &ShamanAiObjectContextInternal::wrath_of_air_totem;
         creators["tranquil air totem"] = &ShamanAiObjectContextInternal::tranquil_air_totem;
@@ -421,6 +432,10 @@ private:
     static Action* mana_spring_totem(PlayerbotAI* botAI) { return new CastManaSpringTotemAction(botAI); }
     static Action* cleansing_totem(PlayerbotAI* botAI) { return new CastCleansingTotemAction(botAI); }
     static Action* mana_tide_totem(PlayerbotAI* botAI) { return new CastManaTideTotemAction(botAI); }
+    static Action* natures_swiftness(PlayerbotAI* botAI)
+    {
+        return new CastBuffSpellAction(botAI, "nature's swiftness");
+    }
     static Action* fire_resistance_totem(PlayerbotAI* botAI) { return new CastFireResistanceTotemAction(botAI); }
     static Action* wrath_of_air_totem(PlayerbotAI* botAI) { return new CastWrathOfAirTotemAction(botAI); }
     static Action* tranquil_air_totem(PlayerbotAI* botAI) { return new CastTranquilAirTotemAction(botAI); }

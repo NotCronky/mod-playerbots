@@ -311,8 +311,8 @@ bool CastBlanketHotAction::isUseful() { return GetTarget() != nullptr; }
 
 bool CastBarkskinAction::isUseful()
 {
-    // 1.12 Barkskin cannot be cast in an animal form; a bear or cat does not leave it for this.
-    if (PlayerbotEra::IsVanilla() && bot->GetShapeshiftForm() != FORM_NONE && bot->GetShapeshiftForm() != FORM_MOONKIN)
+    // 1.12 and 2.4.3 Barkskin cannot be cast in an animal form; a bear or cat does not leave it for this.
+    if (PlayerbotEra::IsClassic() && bot->GetShapeshiftForm() != FORM_NONE && bot->GetShapeshiftForm() != FORM_MOONKIN)
         return false;
 
     return CastBuffSpellAction::isUseful();
@@ -329,8 +329,8 @@ std::vector<NextAction> CastInnervateAction::getPrerequisites()
 
 bool CastDruidRemoveCurseOnPartyAction::isUseful()
 {
-    // A bear does not drop its form (and the threat and armor) to decurse.
-    if (PlayerbotEra::IsVanilla() && botAI->IsTank(bot) && bot->GetShapeshiftForm() != FORM_NONE)
+    // A bear does not drop its form (and the threat and armor) to decurse (1.12 and 2.4.3 forms block it).
+    if (PlayerbotEra::IsClassic() && botAI->IsTank(bot) && bot->GetShapeshiftForm() != FORM_NONE)
         return false;
 
     return CurePartyMemberAction::isUseful();

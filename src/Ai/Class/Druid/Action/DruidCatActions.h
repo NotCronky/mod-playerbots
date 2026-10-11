@@ -8,6 +8,7 @@
 #define PLAYERBOTS_DRUIDCATACTIONS_H
 
 #include "GenericSpellActions.h"
+#include "PlayerbotEra.h"
 #include "ReachTargetActions.h"
 
 constexpr uint32 SPELL_POUNCE_RANK_1 = 9005;
@@ -128,7 +129,13 @@ public:
 class CastRipAction : public CastMeleeDebuffSpellAction
 {
 public:
-    CastRipAction(PlayerbotAI* botAI) : CastMeleeDebuffSpellAction(botAI, "rip", true, 12.0f) {}
+    // 2.4.3 (the TBC APL): on targets that live 10 seconds, refreshed under 2 seconds left.
+    CastRipAction(PlayerbotAI* botAI)
+        : CastMeleeDebuffSpellAction(botAI, "rip", true, PlayerbotEra::IsTbc() ? 10.0f : 12.0f)
+    {
+        if (PlayerbotEra::IsTbc())
+            beforeDuration = 2 * IN_MILLISECONDS;
+    }
 };
 
 class CastShredAction : public CastMeleeSpellAction

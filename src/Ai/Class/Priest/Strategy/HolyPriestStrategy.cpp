@@ -5,6 +5,7 @@
  */
 
 #include "HolyPriestStrategy.h"
+#include "DiscPriestStrategy.h"
 #include "PlayerbotEra.h"
 #include "Playerbots.h"
 
@@ -115,6 +116,12 @@ std::vector<NextAction> HolyHealPriestStrategy::getDefaultActions()
 void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
+
+    if (PlayerbotEra::IsTbc())
+    {
+        AddTbcPriestHealTriggers(triggers);
+        return;
+    }
 
     // 1.12 and 2.4.3: Heal for steady damage, Greater Heal saved for big deficits, Lesser Heal before Heal is learned
     // (2.4.3's Circle of Healing and Prayer of Mending come from the group triggers below; 1.12 has neither).

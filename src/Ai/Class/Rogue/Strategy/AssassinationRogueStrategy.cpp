@@ -80,10 +80,24 @@ void AssassinationRogueStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
 {
     GenericRogueStrategy::InitTriggers(triggers);
 
+    bool const tbc = PlayerbotEra::IsTbc();
+    bool const mutilate = botAI->GetBot()->HasSpell(SPELL_MUTILATE_RANK_1);
+
+    // 2.4.3 (the TBC APL), Subtlety: Slice and Dice > Hemorrhage, the only builder > Rupture at 5 combo points
+    // (Eviscerate while it runs).
+    if (tbc && !mutilate && botAI->HasSpell("hemorrhage"))
+    {
+        triggers.push_back(new TriggerNode("medium energy available", { NextAction("hemorrhage", ACTION_NORMAL + 5) }));
+        triggers.push_back(new TriggerNode("combo points 5 available", { NextAction("rupture", ACTION_HIGH + 2),
+                                                                         NextAction("eviscerate", ACTION_HIGH + 1) }));
+        triggers.push_back(new TriggerNode("target with combo points almost dead",
+                                           { NextAction("eviscerate", ACTION_HIGH + 4) }));
+        triggers.push_back(new TriggerNode("critical health", { NextAction("preparation", ACTION_HIGH + 6) }));
+    }
     // 1.12 has no Mutilate or Envenom, and a 2.4.3 rogue gets them late (Subtlety rogues use this strategy too): build
     // with Ghostly Strike, Hemorrhage or Sinister Strike from 40 energy, Backstab from behind with a dagger, and finish
     // with Eviscerate.
-    if (PlayerbotEra::IsVanilla() || (PlayerbotEra::IsTbc() && !botAI->GetBot()->HasSpell(SPELL_MUTILATE_RANK_1)))
+    else if (PlayerbotEra::IsVanilla() || (tbc && !mutilate))
     {
         triggers.push_back(new TriggerNode("medium energy available", { NextAction("ghostly strike", ACTION_NORMAL + 6),
                                                                         NextAction("hemorrhage", ACTION_NORMAL + 5),
@@ -132,33 +146,48 @@ void AssassinationRogueStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "combo points 4 available",
-            {
-                NextAction("cold blood", ACTION_HIGH + 6),
-                NextAction("envenom", ACTION_HIGH + 5)
-            }
-        )
-    );
+    // 2.4.3 (the TBC APL), Mutilate: Slice and Dice > Envenom at 5 combo points and five Deadly Poison doses >
+    // Mutilate. No Cold Blood or Expose Armor.
+    if (tbc)
+    {
+        if (mutilate)
+        {
+            triggers.push_back(new TriggerNode("envenom", { NextAction("envenom", ACTION_HIGH + 5) }));
+            triggers.push_back(new TriggerNode("target with combo points almost dead",
+                                               { NextAction("envenom", ACTION_HIGH + 4) }));
+        }
+    }
+    else
+    {
+        triggers.push_back(
+            new TriggerNode(
+                "combo points 4 available",
+                {
+                    NextAction("cold blood", ACTION_HIGH + 6),
+                    NextAction("envenom", ACTION_HIGH + 5)
+                }
+            )
+        );
 
-    triggers.push_back(
-        new TriggerNode(
-            "target with combo points almost dead",
-            {
-                NextAction("envenom", ACTION_HIGH + 4)
-            }
-        )
-    );
+        triggers.push_back(
+            new TriggerNode(
+                "target with combo points almost dead",
+                {
+                    NextAction("envenom", ACTION_HIGH + 4)
+                }
+            )
+        );
+    }
 
-    triggers.push_back(
-        new TriggerNode(
-            "expose armor",
-            {
-                NextAction("expose armor", ACTION_HIGH + 3),
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "expose armor",
+                {
+                    NextAction("expose armor", ACTION_HIGH + 3),
+                }
+            )
+        );
 
     triggers.push_back(
         new TriggerNode(

@@ -16,6 +16,14 @@ ShadowPriestStrategy::ShadowPriestStrategy(PlayerbotAI* botAI) : GenericPriestSt
 
 std::vector<NextAction> ShadowPriestStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Mind Blast > Shadow Word: Death above 10% mana and half health (a trigger) > Mind Flay.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("mind blast", ACTION_DEFAULT + 0.3f),
+            NextAction("mind flay", ACTION_DEFAULT + 0.2f),
+            NextAction("shoot", ACTION_DEFAULT)
+        };
+
     return {
         NextAction("mind blast", ACTION_DEFAULT + 0.3f),
         NextAction("mind flay", ACTION_DEFAULT + 0.2f),
@@ -27,6 +35,10 @@ std::vector<NextAction> ShadowPriestStrategy::getDefaultActions()
 void ShadowPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
+
+    if (PlayerbotEra::IsTbc())
+        triggers.push_back(new TriggerNode("shadow word: death safe",
+                                           { NextAction("shadow word: death", ACTION_DEFAULT + 0.25f) }));
 
     triggers.push_back(
         new TriggerNode(
@@ -111,6 +123,15 @@ void ShadowPriestDebuffStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
     if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("vampiric embrace on target",
                                            { NextAction("vampiric embrace on target", ACTION_HIGH + 3) }));
+
+    // 2.4.3 (the TBC APL): Shadow Word: Pain > Vampiric Touch; no Devouring Plague (an Undead racial).
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("shadow word: pain",
+                                           { NextAction("shadow word: pain", ACTION_HIGH + 2.5f) }));
+        triggers.push_back(new TriggerNode("vampiric touch", { NextAction("vampiric touch", ACTION_HIGH + 2) }));
+        return;
+    }
 
     triggers.push_back(
         new TriggerNode(

@@ -9,6 +9,7 @@
 #include "ObjectGuid.h"
 #include "Player.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 namespace
@@ -70,6 +71,10 @@ bool CastEnvenomAction::isUseful()
 
 bool CastEnvenomAction::isPossible()
 {
+    // 2.4.3: Envenom is trained (level 62), with no Master Poisoner rank 3.
+    if (PlayerbotEra::IsTbc())
+        return CastMeleeSpellAction::isPossible();
+
     // alternate to eviscerate if talents unlearned
     return bot->HasAura(SPELL_MASTER_POISONER_RANK_3);
 }

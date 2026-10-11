@@ -11,6 +11,7 @@
 #include "GenericTriggers.h"
 #include "Player.h"
 #include "PlayerbotAI.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "RtiTriggers.h"
 #include "SharedDefines.h"
@@ -95,7 +96,9 @@ public:
 class InsectSwarmTrigger : public DebuffTrigger
 {
 public:
-    InsectSwarmTrigger(PlayerbotAI* botAI) : DebuffTrigger(botAI, "insect swarm", 1, true) {}
+    // 2.4.3 (the TBC APL): only on targets that live 12 seconds.
+    InsectSwarmTrigger(PlayerbotAI* botAI)
+        : DebuffTrigger(botAI, "insect swarm", 1, true, PlayerbotEra::IsTbc() ? 12.0f : 8.0f) {}
 };
 
 class InsectSwarmOnAttackerTrigger : public DebuffOnAttackerTrigger
@@ -108,7 +111,9 @@ public:
 class MoonfireTrigger : public DebuffTrigger
 {
 public:
-    MoonfireTrigger(PlayerbotAI* botAI) : DebuffTrigger(botAI, "moonfire", 1, true) {}
+    // 2.4.3 (the TBC APL): only on targets that live 12 seconds.
+    MoonfireTrigger(PlayerbotAI* botAI)
+        : DebuffTrigger(botAI, "moonfire", 1, true, PlayerbotEra::IsTbc() ? 12.0f : 8.0f) {}
 };
 
 class MoonfireOnAttackerTrigger : public DebuffOnAttackerTrigger
@@ -133,6 +138,11 @@ public:
     {
         if (!bot->IsInCombat())
             return false;
+
+        // 2.4.3 (the TBC APL): bear and cat both keep the debuff up, no more.
+        if (PlayerbotEra::IsTbc())
+            return botAI->HasAnyAuraOf(bot, "bear form", "dire bear form", "cat form", nullptr) &&
+                   !botAI->HasAura("prowl", bot) && DebuffTrigger::IsActive();
 
         // Bear: every cast generates immediate threat/damage for free — spam it
         if (botAI->HasAnyAuraOf(bot, "bear form", "dire bear form", nullptr))
@@ -398,6 +408,39 @@ public:
 
         return true;
     }
+};
+
+// 2.4.3 (the TBC APL): Ferocious Bite at 5 combo points on a target with 10 seconds or less to live (Rip otherwise).
+class FerociousBiteDyingTargetTrigger : public Trigger
+{
+public:
+    FerociousBiteDyingTargetTrigger(PlayerbotAI* botAI) : Trigger(botAI, "ferocious bite on dying target") {}
+    bool IsActive() override;
+};
+
+// 2.4.3 (the TBC APL): with Furor, leaving Cat Form and shifting back gives 40 energy (the shift sets energy to 0), so
+// a cat at 20 energy or less with the mana for the form powershifts.
+class PowershiftTrigger : public Trigger
+{
+public:
+    PowershiftTrigger(PlayerbotAI* botAI) : Trigger(botAI, "powershift") {}
+    bool IsActive() override;
+};
+
+// 2.4.3 (the TBC APL): Swipe from 15 rage while Mangle (Bear) cools down.
+class SwipeBearFillerTrigger : public Trigger
+{
+public:
+    SwipeBearFillerTrigger(PlayerbotAI* botAI) : Trigger(botAI, "swipe (bear) filler") {}
+    bool IsActive() override;
+};
+
+// 2.4.3 (the TBC APL): Lifebloom kept rolling on the main tank in combat (the action keeps three stacks).
+class LifebloomOnMainTankTrigger : public Trigger
+{
+public:
+    LifebloomOnMainTankTrigger(PlayerbotAI* botAI) : Trigger(botAI, "lifebloom on main tank") {}
+    bool IsActive() override;
 };
 
 class FerociousBiteExecuteTrigger : public Trigger

@@ -51,6 +51,15 @@ SurvivalHunterStrategy::SurvivalHunterStrategy(PlayerbotAI* botAI) : GenericHunt
 // ===== Default Actions =====
 std::vector<NextAction> SurvivalHunterStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Kill Command (a trigger) > Multi-Shot > Steady Shot. Expose Weakness is a passive proc; no
+    // stings or Aimed Shot (a cast in 2.4.3, which clips Auto Shot).
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("multi-shot", 5.6f),
+            NextAction("steady shot", 5.2f),
+            NextAction("auto shot", 5.1f)
+        };
+
     // 1.12 shot loop (no Kill Command, Kill Shot or Steady Shot): Aimed Shot, Multi-Shot, then Arcane Shot.
     if (PlayerbotEra::IsVanilla())
         return {
@@ -78,6 +87,7 @@ std::vector<NextAction> SurvivalHunterStrategy::getDefaultActions()
 void SurvivalHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     bool const classic = PlayerbotEra::IsClassic();
+    bool const tbc = PlayerbotEra::IsTbc();
     GenericHunterStrategy::InitTriggers(triggers);
 
     triggers.push_back(
@@ -130,6 +140,8 @@ void SurvivalHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
                 }
             )
         );
+    if (tbc)
+        return;
     triggers.push_back(
         new TriggerNode(
             "no stings",

@@ -32,6 +32,12 @@ bool CastTravelFormAction::isUseful()
            !botAI->HasAura("dash", bot);
 }
 
+bool CastPowershiftAction::Execute(Event event)
+{
+    botAI->RemoveAura("cat form");
+    return CastBuffSpellAction::Execute(event);
+}
+
 bool CastCasterFormAction::Execute(Event /*event*/)
 {
     botAI->RemoveShapeshift();

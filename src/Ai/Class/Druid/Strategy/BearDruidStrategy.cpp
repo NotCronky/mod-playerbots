@@ -5,6 +5,7 @@
  */
 
 #include "BearDruidStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 class BearDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
@@ -100,6 +101,10 @@ BearDruidStrategy::BearDruidStrategy(PlayerbotAI* botAI) : FeralDruidStrategy(bo
 
 std::vector<NextAction> BearDruidStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Maul from 40 rage (a trigger).
+    if (PlayerbotEra::IsTbc())
+        return { NextAction("melee", 5.0f) };
+
     return {
         NextAction("maul",   5.2f),
         NextAction("enrage", 5.1f),
@@ -123,18 +128,32 @@ void BearDruidStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             { NextAction("frenzied regeneration", 27.0f) }
         )
     );
-    triggers.push_back(new TriggerNode(
-        "mangle (bear)", { NextAction("mangle (bear)", 17.5f) }
-    ));
-    triggers.push_back(new TriggerNode(
-        "faerie fire (feral)", { NextAction("faerie fire (feral)", 17.0f) }
-    ));
-    triggers.push_back(new TriggerNode(
-        "lacerate", { NextAction("lacerate", 16.0f) }
-    ));
-    triggers.push_back(new TriggerNode(
-        "demoralizing roar", { NextAction("demoralizing roar", 15.5f) }
-    ));
+
+    // 2.4.3 (the TBC APL): Demoralizing Roar > Faerie Fire (Feral), both kept up > Mangle (Bear) > Swipe from 15 rage
+    // while Mangle cools down > Maul from 40 rage. No Lacerate.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("demoralizing roar", { NextAction("demoralizing roar", 18.5f) }));
+        triggers.push_back(new TriggerNode("faerie fire (feral)", { NextAction("faerie fire (feral)", 18.0f) }));
+        triggers.push_back(new TriggerNode("mangle (bear)", { NextAction("mangle (bear)", 17.5f) }));
+        triggers.push_back(new TriggerNode("swipe (bear) filler", { NextAction("swipe (bear)", 17.0f) }));
+        triggers.push_back(new TriggerNode("medium rage available", { NextAction("maul", 16.5f) }));
+    }
+    else
+    {
+        triggers.push_back(new TriggerNode(
+            "mangle (bear)", { NextAction("mangle (bear)", 17.5f) }
+        ));
+        triggers.push_back(new TriggerNode(
+            "faerie fire (feral)", { NextAction("faerie fire (feral)", 17.0f) }
+        ));
+        triggers.push_back(new TriggerNode(
+            "lacerate", { NextAction("lacerate", 16.0f) }
+        ));
+        triggers.push_back(new TriggerNode(
+            "demoralizing roar", { NextAction("demoralizing roar", 15.5f) }
+        ));
+    }
     triggers.push_back(new TriggerNode("high aoe",    { NextAction("challenging roar", 26.5f) }));
     triggers.push_back(new TriggerNode("lose aggro",
         {

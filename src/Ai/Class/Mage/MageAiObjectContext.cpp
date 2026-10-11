@@ -103,6 +103,10 @@ public:
         creators["arcane blast"] = &MageTriggerFactoryInternal::arcane_blast;
         creators["counterspell on enemy healer"] = &MageTriggerFactoryInternal::counterspell_enemy_healer;
         creators["arcane power"] = &MageTriggerFactoryInternal::arcane_power;
+        creators["arcane power with mana"] = &MageTriggerFactoryInternal::arcane_power_with_mana;
+        creators["arcane power active"] = &MageTriggerFactoryInternal::arcane_power_active;
+        creators["arcane blast with mana"] = &MageTriggerFactoryInternal::arcane_blast_with_mana;
+        creators["fire vulnerability"] = &MageTriggerFactoryInternal::fire_vulnerability;
         creators["presence of mind"] = &MageTriggerFactoryInternal::presence_of_mind;
         creators["fire ward"] = &MageTriggerFactoryInternal::fire_ward;
         creators["frost ward"] = &MageTriggerFactoryInternal::frost_ward;
@@ -133,6 +137,13 @@ private:
     static Trigger* frost_ward(PlayerbotAI* botAI) { return new FrostWardTrigger(botAI); }
     static Trigger* fire_ward(PlayerbotAI* botAI) { return new FireWardTrigger(botAI); }
     static Trigger* arcane_power(PlayerbotAI* botAI) { return new ArcanePowerTrigger(botAI); }
+    static Trigger* arcane_power_with_mana(PlayerbotAI* botAI)
+    {
+        return new TwoTriggers(botAI, "arcane power", "mana above 40");
+    }
+    static Trigger* arcane_power_active(PlayerbotAI* botAI) { return new HasAuraTrigger(botAI, "arcane power"); }
+    static Trigger* arcane_blast_with_mana(PlayerbotAI* botAI) { return new ArcaneBlastWithManaTrigger(botAI); }
+    static Trigger* fire_vulnerability(PlayerbotAI* botAI) { return new FireVulnerabilityTrigger(botAI); }
     static Trigger* hot_streak(PlayerbotAI* botAI) { return new HotStreakTrigger(botAI); }
     static Trigger* fireball(PlayerbotAI* botAI) { return new FireballTrigger(botAI); }
     static Trigger* pyroblast(PlayerbotAI* botAI) { return new PyroblastTrigger(botAI); }

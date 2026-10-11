@@ -40,6 +40,14 @@ std::vector<NextAction> ArcaneMageStrategy::getDefaultActions()
 {
     // 1.12 has no Arcane Blast or Arcane Barrage: arcane casts Frostbolt (with Arcane Power), Arcane Missiles
     // next, Fire Blast on the move.
+    // 2.4.3 (the TBC APL): Arcane Blast (a trigger: under three stacks, or above 30% mana) > Frostbolt.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("frostbolt", 5.5f),
+            NextAction("fire blast", 5.3f),
+            NextAction("shoot", 5.0f)
+        };
+
     if (PlayerbotEra::IsVanilla())
         return {
             NextAction("frostbolt", 5.6f),
@@ -62,6 +70,9 @@ std::vector<NextAction> ArcaneMageStrategy::getDefaultActions()
 void ArcaneMageStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericMageStrategy::InitTriggers(triggers);
+
+    if (PlayerbotEra::IsTbc())
+        triggers.push_back(new TriggerNode("arcane blast with mana", { NextAction("arcane blast", 5.6f) }));
 
     // Proc Trigger
     triggers.push_back(

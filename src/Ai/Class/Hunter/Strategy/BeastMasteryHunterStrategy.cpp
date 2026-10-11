@@ -16,6 +16,17 @@ BeastMasteryHunterStrategy::BeastMasteryHunterStrategy(PlayerbotAI* botAI) : Gen
 // ===== Default Actions =====
 std::vector<NextAction> BeastMasteryHunterStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Kill Command (a trigger) > Bestial Wrath > Multi-Shot > Arcane Shot above 30% mana (a
+    // trigger) > Steady Shot. No stings, and no Aimed Shot (a cast in 2.4.3, which clips Auto Shot); Rapid Fire stays a
+    // boost.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("bestial wrath", 18.4f),
+            NextAction("multi-shot", 5.6f),
+            NextAction("steady shot", 5.2f),
+            NextAction("auto shot", 5.1f)
+        };
+
     // 1.12 shot loop (no Kill Command, Kill Shot or Steady Shot): Aimed Shot, Multi-Shot, then Arcane Shot.
     if (PlayerbotEra::IsVanilla())
         return {
@@ -43,6 +54,7 @@ std::vector<NextAction> BeastMasteryHunterStrategy::getDefaultActions()
 void BeastMasteryHunterStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     bool const classic = PlayerbotEra::IsClassic();
+    bool const tbc = PlayerbotEra::IsTbc();
     GenericHunterStrategy::InitTriggers(triggers);
     triggers.push_back(
         new TriggerNode(
@@ -78,6 +90,11 @@ void BeastMasteryHunterStrategy::InitTriggers(std::vector<TriggerNode*>& trigger
                 }
             )
         );
+    if (tbc)
+    {
+        triggers.push_back(new TriggerNode("mana above 30", { NextAction("arcane shot", 5.4f) }));
+        return;
+    }
     triggers.push_back(
         new TriggerNode(
             "no stings",

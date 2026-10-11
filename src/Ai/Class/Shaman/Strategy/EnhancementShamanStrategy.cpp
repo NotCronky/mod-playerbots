@@ -38,6 +38,15 @@ EnhancementShamanStrategy::EnhancementShamanStrategy(PlayerbotAI* botAI) : Gener
 // ===== Default Actions =====
 std::vector<NextAction> EnhancementShamanStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Bloodlust (boost) > Shamanistic Rage under 30% mana > Stormstrike > Earth Shock; Magma
+    // Totem above 40% mana (the fire totem strategy). No Flame Shock.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("stormstrike", 5.5f),
+            NextAction("earth shock", 5.3f),
+            NextAction("melee", 5.0f)
+        };
+
     return {
        NextAction("stormstrike", 5.5f),
        NextAction("feral spirit", 5.4f),
@@ -107,14 +116,15 @@ void EnhancementShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
                 }
             )
         );
-    triggers.push_back(
-        new TriggerNode(
-            "flame shock",
-            {
-                NextAction("flame shock", 19.0f)
-            }
-        )
-    );
+    if (!PlayerbotEra::IsTbc())
+        triggers.push_back(
+            new TriggerNode(
+                "flame shock",
+                {
+                    NextAction("flame shock", 19.0f)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "lightning shield",
@@ -127,7 +137,7 @@ void EnhancementShamanStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
     // Health/Mana Triggers
     triggers.push_back(
         new TriggerNode(
-            "medium mana",
+            PlayerbotEra::IsTbc() ? "mana below 30" : "medium mana",
             {
                 NextAction("shamanistic rage", 23.0f)
             }

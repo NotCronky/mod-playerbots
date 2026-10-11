@@ -8,6 +8,7 @@
 #include "GenericTriggers.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
+#include "SpellAuraEffects.h"
 
 namespace
 {
@@ -133,4 +134,17 @@ bool OffHandWeaponNoEnchantTrigger::IsActive()
     if (!itemForSpell || itemForSpell->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
         return false;
     return true;
+}
+
+bool EnvenomTrigger::IsActive()
+{
+    constexpr uint32 DEADLY_POISON_FAMILY_FLAG = 0x10000;
+
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || !target->IsAlive() || AI_VALUE2(uint8, "combo", "current target") < 5)
+        return false;
+
+    AuraEffect const* poison = target->GetAuraEffect(SPELL_AURA_PERIODIC_DAMAGE, SPELLFAMILY_ROGUE,
+                                                     DEADLY_POISON_FAMILY_FLAG, 0, 0, bot->GetGUID());
+    return poison && poison->GetBase()->GetStackAmount() >= 5;
 }

@@ -11,7 +11,8 @@
 
 class PlayerbotAI;
 
-// 1.12, Discipline heal triggers.
+// 2.4.3 (the TBC APL), Holy and Discipline heal triggers.
+void AddTbcPriestHealTriggers(std::vector<TriggerNode*>& triggers);
 void AddVanillaPriestHealTriggers(std::vector<TriggerNode*>& triggers);
 
 class DiscPriestStrategy : public GenericPriestStrategy

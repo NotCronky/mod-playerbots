@@ -90,6 +90,7 @@ public:
         creators["vampiric touch"] = &PriestTriggerFactoryInternal::vampiric_touch;
         creators["vampiric touch on attacker"] = &PriestTriggerFactoryInternal::vampiric_touch_on_attacker;
         creators["shadowform"] = &PriestTriggerFactoryInternal::shadowform;
+        creators["shadow word: death safe"] = &PriestTriggerFactoryInternal::shadow_word_death_safe;
         creators["vampiric embrace"] = &PriestTriggerFactoryInternal::vampiric_embrace;
         creators["vampiric embrace on target"] = &PriestTriggerFactoryInternal::vampiric_embrace_on_target;
         creators["power infusion"] = &PriestTriggerFactoryInternal::power_infusion;
@@ -115,6 +116,7 @@ private:
     static Trigger* vampiric_embrace(PlayerbotAI* botAI) { return new VampiricEmbraceTrigger(botAI); }
     static Trigger* vampiric_embrace_on_target(PlayerbotAI* botAI) { return new VampiricEmbraceOnTargetTrigger(botAI); }
     static Trigger* shadowform(PlayerbotAI* botAI) { return new ShadowformTrigger(botAI); }
+    static Trigger* shadow_word_death_safe(PlayerbotAI* botAI) { return new ShadowWordDeathSafeTrigger(botAI); }
     static Trigger* vampiric_touch(PlayerbotAI* botAI) { return new VampiricTouchTrigger(botAI); }
     static Trigger* vampiric_touch_on_attacker(PlayerbotAI* botAI) { return new VampiricTouchOnAttackerTrigger(botAI); }
     static Trigger* devouring_plague(PlayerbotAI* botAI) { return new DevouringPlagueTrigger(botAI); }

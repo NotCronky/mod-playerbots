@@ -181,6 +181,8 @@ public:
         creators["curse of agony on attacker"] = &WarlockTriggerFactoryInternal::curse_of_agony_on_attacker;
         creators["curse of the elements"] = &WarlockTriggerFactoryInternal::curse_of_the_elements;
         creators["curse of doom"] = &WarlockTriggerFactoryInternal::curse_of_doom;
+        creators["curse of doom long fight"] = &WarlockTriggerFactoryInternal::curse_of_doom_long_fight;
+        creators["curse of agony short fight"] = &WarlockTriggerFactoryInternal::curse_of_agony_short_fight;
         creators["curse of exhaustion"] = &WarlockTriggerFactoryInternal::curse_of_exhaustion;
         creators["curse of tongues"] = &WarlockTriggerFactoryInternal::curse_of_tongues;
         creators["curse of weakness"] = &WarlockTriggerFactoryInternal::curse_of_weakness;
@@ -230,6 +232,14 @@ private:
     static Trigger* curse_of_agony_on_attacker(PlayerbotAI* botAI) { return new CurseOfAgonyOnAttackerTrigger(botAI); }
     static Trigger* curse_of_the_elements(PlayerbotAI* botAI) { return new CurseOfTheElementsTrigger(botAI); }
     static Trigger* curse_of_doom(PlayerbotAI* botAI) { return new CurseOfDoomTrigger(botAI); }
+    static Trigger* curse_of_doom_long_fight(PlayerbotAI* botAI)
+    {
+        return new TbcCurseTrigger(botAI, "curse of doom", "curse of agony", true);
+    }
+    static Trigger* curse_of_agony_short_fight(PlayerbotAI* botAI)
+    {
+        return new TbcCurseTrigger(botAI, "curse of agony", "curse of doom", false);
+    }
     static Trigger* curse_of_exhaustion(PlayerbotAI* botAI) { return new CurseOfExhaustionTrigger(botAI); }
     static Trigger* curse_of_tongues(PlayerbotAI* botAI) { return new CurseOfTonguesTrigger(botAI); }
     static Trigger* curse_of_weakness(PlayerbotAI* botAI) { return new CurseOfWeaknessTrigger(botAI); }
@@ -310,6 +320,7 @@ public:
         creators["curse of agony on attacker"] = &WarlockAiObjectContextInternal::curse_of_agony_on_attacker;
         creators["curse of the elements"] = &WarlockAiObjectContextInternal::curse_of_the_elements;
         creators["curse of doom"] = &WarlockAiObjectContextInternal::curse_of_doom;
+        creators["amplify curse"] = &WarlockAiObjectContextInternal::amplify_curse;
         creators["curse of exhaustion"] = &WarlockAiObjectContextInternal::curse_of_exhaustion;
         creators["curse of tongues"] = &WarlockAiObjectContextInternal::curse_of_tongues;
         creators["curse of weakness"] = &WarlockAiObjectContextInternal::curse_of_weakness;
@@ -383,6 +394,7 @@ private:
     static Action* curse_of_agony_on_attacker(PlayerbotAI* botAI) { return new CastCurseOfAgonyOnAttackerAction(botAI); }
     static Action* curse_of_the_elements(PlayerbotAI* botAI) { return new CastCurseOfTheElementsAction(botAI); }
     static Action* curse_of_doom(PlayerbotAI* botAI) { return new CastCurseOfDoomAction(botAI); }
+    static Action* amplify_curse(PlayerbotAI* botAI) { return new CastBuffSpellAction(botAI, "amplify curse"); }
     static Action* curse_of_exhaustion(PlayerbotAI* botAI) { return new CastCurseOfExhaustionAction(botAI); }
     static Action* curse_of_tongues(PlayerbotAI* botAI) { return new CastCurseOfTonguesAction(botAI); }
     static Action* curse_of_weakness(PlayerbotAI* botAI) { return new CastCurseOfWeaknessAction(botAI); }

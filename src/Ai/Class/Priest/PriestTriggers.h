@@ -119,4 +119,13 @@ protected:
     static const std::set<uint32> MIND_SEAR_SPELL_IDS;
 };
 
+// 2.4.3 (the TBC APL): Shadow Word: Death above 10% mana. If the target survives it, the priest takes the damage it
+// dealt, so only with half health or more (a shadow priest killed himself with it in the census).
+class ShadowWordDeathSafeTrigger : public Trigger
+{
+public:
+    ShadowWordDeathSafeTrigger(PlayerbotAI* botAI) : Trigger(botAI, "shadow word: death safe") {}
+    bool IsActive() override;
+};
+
 #endif

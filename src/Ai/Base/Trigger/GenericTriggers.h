@@ -54,6 +54,18 @@ private:
     uint8 pct;
 };
 
+// Mana below a share of the maximum (the TBC APL's Innervate under 20%).
+class ManaBelowPctTrigger : public Trigger
+{
+public:
+    ManaBelowPctTrigger(PlayerbotAI* botAI, uint8 pct, std::string const name) : Trigger(botAI, name), pct(pct) {}
+
+    bool IsActive() override;
+
+private:
+    uint8 pct;
+};
+
 class AlmostFullManaTrigger : public Trigger
 {
 public:

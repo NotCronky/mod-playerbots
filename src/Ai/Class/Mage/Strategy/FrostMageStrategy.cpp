@@ -5,6 +5,7 @@
  */
 
 #include "FrostMageStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 FrostMageStrategy::FrostMageStrategy(PlayerbotAI* botAI) : GenericMageStrategy(botAI)
@@ -72,6 +73,13 @@ void FrostMageStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     );
 
     // Proc/Freeze triggers
+    // 2.4.3 (the TBC APL): Icy Veins, Water Elemental and Cold Snap (above) > Ice Lance on a frozen target > Frostbolt.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("frostbite on target", { NextAction("ice lance", 19.0f) }));
+        triggers.push_back(new TriggerNode("frost nova on target", { NextAction("ice lance", 19.0f) }));
+        return;
+    }
     triggers.push_back(
         new TriggerNode(
             "brain freeze",

@@ -5,6 +5,7 @@
  */
 
 #include "RestoDruidStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 RestoDruidStrategy::RestoDruidStrategy(PlayerbotAI* botAI) : GenericDruidStrategy(botAI)
@@ -15,6 +16,45 @@ RestoDruidStrategy::RestoDruidStrategy(PlayerbotAI* botAI) : GenericDruidStrateg
 void RestoDruidStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericDruidStrategy::InitTriggers(triggers);
+
+    // 2.4.3 (the TBC APL): Tree of Life kept up > Lifebloom rolling on the main tank (three stacks) > Rejuvenation
+    // under 85% > Regrowth under 70%. Tree of Life blocks Healing Touch in 2.4.3, so Nature's Swiftness makes Regrowth
+    // instant instead; Swiftmend stays for critical health.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("no healer dps strategy", { NextAction("tree form", 34.5f) }));
+        triggers.push_back(new TriggerNode("party member to heal out of spell range",
+                                           { NextAction("reach party member to heal", 39.0f) }));
+        triggers.push_back(new TriggerNode("party member critical health",
+                                           { NextAction("nature's swiftness", 58.0f) }));
+        triggers.push_back(new TriggerNode("nature's swiftness active",
+                                           {
+                                               NextAction("regrowth on party", 55.0f),
+                                               NextAction("healing touch on party", 54.0f),
+                                           }));
+        triggers.push_back(new TriggerNode("party member critical health",
+                                           {
+                                               NextAction("swiftmend on party", 34.0f),
+                                               NextAction("regrowth on party", 31.0f),
+                                               NextAction("rejuvenation on party", 30.0f),
+                                           }));
+        triggers.push_back(new TriggerNode("lifebloom on main tank", { NextAction("lifebloom on main tank", 22.0f) }));
+        triggers.push_back(new TriggerNode("party member low health",
+                                           {
+                                               NextAction("rejuvenation on party", 21.2f),
+                                               NextAction("regrowth on party", 21.1f),
+                                           }));
+        triggers.push_back(new TriggerNode("party member medium health",
+                                           {
+                                               NextAction("rejuvenation on party", 20.2f),
+                                               NextAction("regrowth on party", 20.1f),
+                                           }));
+        triggers.push_back(new TriggerNode("party member almost full health",
+                                           { NextAction("rejuvenation on party", 10.2f) }));
+        triggers.push_back(new TriggerNode("medium mana", { NextAction("innervate", 25.0f) }));
+        triggers.push_back(new TriggerNode("enemy too close for spell", { NextAction("flee", 39.0f) }));
+        return;
+    }
 
     triggers.push_back(new TriggerNode("no healer dps strategy",
                                        { NextAction("tree form", 5.0f) }));

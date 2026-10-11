@@ -39,6 +39,11 @@ bool CastBerserkerRageAction::isPossible()
 
 bool CastBerserkerRageAction::isUseful()
 {
+    // 1.12 and 2.4.3 Berserker Rage needs Berserker Stance, and a feared or sapped warrior can't change stance: only
+    // one already in it breaks out (a tank in Defensive Stance kept failing it).
+    if (PlayerbotEra::IsClassic() && !botAI->HasAura("berserker stance", bot))
+        return false;
+
     return (bot->HasAuraType(SPELL_AURA_MOD_FEAR) ||
            bot->HasAuraWithMechanic(1 << MECHANIC_SLEEP) ||
            bot->HasAuraWithMechanic(1 << MECHANIC_SAPPED))

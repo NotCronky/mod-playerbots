@@ -256,3 +256,18 @@ bool RainOfFireChannelCheckTrigger::IsActive()
     // Not channeling Rain of Fire
     return false;
 }
+
+bool TbcCurseTrigger::IsActive()
+{
+    constexpr float LONG_FIGHT_SECONDS = 60.0f;
+
+    Unit* target = GetTarget();
+    if (!target || !target->IsAlive() || !target->IsInWorld() || !BuffTrigger::IsActive())
+        return false;
+
+    if (botAI->HasAura(otherCurse, target, false, true))
+        return false;
+
+    bool const lives = target->GetHealth() / AI_VALUE(float, "estimated group dps") > LONG_FIGHT_SECONDS;
+    return lives == longFight;
+}

@@ -8,6 +8,7 @@
 #define PLAYERBOTS_ROGUEFINISHINGACTIONS_H
 
 #include "GenericSpellActions.h"
+#include "PlayerbotEra.h"
 
 class PlayerbotAI;
 
@@ -32,7 +33,9 @@ public:
 class CastRuptureAction : public CastDebuffSpellAction
 {
 public:
-    CastRuptureAction(PlayerbotAI* botAI) : CastDebuffSpellAction(botAI, "rupture", true, 6.0f) {}
+    // 2.4.3 (the TBC APL): only on targets that live 8 seconds.
+    CastRuptureAction(PlayerbotAI* botAI)
+        : CastDebuffSpellAction(botAI, "rupture", true, PlayerbotEra::IsTbc() ? 8.0f : 6.0f) {}
 };
 
 class CastKidneyShotAction : public CastMeleeSpellAction

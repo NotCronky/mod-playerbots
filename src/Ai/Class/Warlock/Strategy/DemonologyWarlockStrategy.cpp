@@ -5,6 +5,7 @@
  */
 
 #include "DemonologyWarlockStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 DemonologyWarlockStrategy::DemonologyWarlockStrategy(PlayerbotAI* botAI) : GenericWarlockStrategy(botAI)
@@ -15,6 +16,14 @@ DemonologyWarlockStrategy::DemonologyWarlockStrategy(PlayerbotAI* botAI) : Gener
 // ===== Default Actions =====
 std::vector<NextAction> DemonologyWarlockStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Felguard (the pet strategy) > Corruption > Shadow Bolt. No Immolate or Incinerate.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("corruption", 5.5f),
+            NextAction("shadow bolt", 5.3f),
+            NextAction("shoot", 5.0f)
+        };
+
     return {
        NextAction("corruption", 5.5f),
        NextAction("immolate", 5.4f),
@@ -55,14 +64,16 @@ void DemonologyWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "immolate on attacker",
-            {
-                NextAction("immolate on attacker", 19.0f)
-            }
-        )
-    );
+    bool const tbc = PlayerbotEra::IsTbc();
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "immolate on attacker",
+                {
+                    NextAction("immolate on attacker", 19.0f)
+                }
+            )
+        );
     triggers.push_back(
         new TriggerNode(
             "corruption",
@@ -71,14 +82,15 @@ void DemonologyWarlockStrategy::InitTriggers(std::vector<TriggerNode*>& triggers
             }
         )
     );
-    triggers.push_back(
-        new TriggerNode(
-            "immolate",
-            {
-                NextAction("immolate", 17.5f)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "immolate",
+                {
+                    NextAction("immolate", 17.5f)
+                }
+            )
+        );
 
     // Procs
     triggers.push_back(

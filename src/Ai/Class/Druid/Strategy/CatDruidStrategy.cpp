@@ -5,6 +5,7 @@
  */
 
 #include "CatDruidStrategy.h"
+#include "PlayerbotEra.h"
 
 class CatDruidStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
@@ -126,6 +127,24 @@ void CatDruidStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
+
+    // 2.4.3 (the TBC APL): Faerie Fire (Feral) kept up > Shred on Clearcasting > powershift at 20 energy or less >
+    // Ferocious Bite at 5 combo points on a target dying within 10 seconds, Rip otherwise (refreshed under 2 seconds) >
+    // Shred. No Rake, Maim or Tiger's Fury; Mangle only where Shred can't land (not behind the target).
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("faerie fire (feral)", { NextAction("faerie fire (feral)", 25.0f) }));
+        triggers.push_back(new TriggerNode("clearcasting", { NextAction("shred", 24.5f) }));
+        triggers.push_back(new TriggerNode("powershift", { NextAction("powershift", 24.0f) }));
+        triggers.push_back(new TriggerNode("ferocious bite on dying target", { NextAction("ferocious bite", 23.6f) }));
+        triggers.push_back(new TriggerNode("combo points 5 available", { NextAction("rip", 23.5f) }));
+        triggers.push_back(new TriggerNode("medium threat", { NextAction("cower", 21.0f) }));
+        triggers.push_back(new TriggerNode("combo points not full",
+                                           { NextAction("ravage", 5.6f), NextAction("pounce", 5.5f) }));
+        triggers.push_back(new TriggerNode("behind target", { NextAction("shred", 5.4f) }));
+        triggers.push_back(new TriggerNode("not behind target", { NextAction("mangle (cat)", 5.3f) }));
+        return;
+    }
     triggers.push_back(
         new TriggerNode(
             "low energy", {

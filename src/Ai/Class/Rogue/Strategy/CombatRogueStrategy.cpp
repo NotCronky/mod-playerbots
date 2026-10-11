@@ -79,6 +79,10 @@ void CombatRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericRogueStrategy::InitTriggers(triggers);
 
+    // 2.4.3 (the TBC APL): Slice and Dice > Rupture at 5 combo points on a target that lives 8 seconds > Eviscerate >
+    // Sinister Strike; Adrenaline Rush under 30 energy (boost). No Riposte or Expose Armor.
+    bool const tbc = PlayerbotEra::IsTbc();
+
     // 1.12 and 2.4.3: Sinister Strike from 40 energy (it costs 40-45), not only when energy caps.
     if (PlayerbotEra::IsClassic())
         triggers.push_back(new TriggerNode("medium energy available", { NextAction("sinister strike", ACTION_NORMAL + 3) }));
@@ -111,14 +115,15 @@ void CombatRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "riposte",
-            {
-                NextAction("riposte", ACTION_HIGH + 4)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "riposte",
+                {
+                    NextAction("riposte", ACTION_HIGH + 4)
+                }
+            )
+        );
 
     triggers.push_back(
         new TriggerNode(
@@ -196,14 +201,15 @@ void CombatRogueStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
         )
     );
 
-    triggers.push_back(
-        new TriggerNode(
-            "expose armor",
-            {
-                NextAction("expose armor", ACTION_HIGH + 3)
-            }
-        )
-    );
+    if (!tbc)
+        triggers.push_back(
+            new TriggerNode(
+                "expose armor",
+                {
+                    NextAction("expose armor", ACTION_HIGH + 3)
+                }
+            )
+        );
 
     triggers.push_back(
         new TriggerNode(
@@ -384,9 +390,10 @@ void RogueAoeStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 
 void RogueBoostStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    // 2.4.3 (the TBC APL): Adrenaline Rush once energy runs low.
     triggers.push_back(
         new TriggerNode(
-            "adrenaline rush",
+            PlayerbotEra::IsTbc() ? "adrenaline rush on low energy" : "adrenaline rush",
             {
                 NextAction("adrenaline rush", ACTION_HIGH + 2)
             }

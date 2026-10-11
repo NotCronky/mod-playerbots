@@ -260,6 +260,19 @@ public:
     bool IsActive() override { return BuffTrigger::IsActive(); }
 };
 
+// 2.4.3 (the TBC APL): one curse per target, Curse of Doom on targets that live a minute, Curse of Agony on the rest.
+class TbcCurseTrigger : public DebuffTrigger
+{
+public:
+    TbcCurseTrigger(PlayerbotAI* botAI, std::string const curse, std::string const otherCurse, bool longFight)
+        : DebuffTrigger(botAI, curse, 1, true, 0.0f), otherCurse(otherCurse), longFight(longFight) {}
+    bool IsActive() override;
+
+private:
+    std::string const otherCurse;
+    bool longFight;
+};
+
 class CurseOfExhaustionTrigger : public DebuffTrigger
 {
 public:

@@ -11,6 +11,7 @@
 #include "Player.h"
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "SharedDefines.h"
 #include "Spell.h"
@@ -89,8 +90,10 @@ bool HunterAspectOfTheViperTrigger::IsActive()
         botAI->HasStrategy("bspeed", BotState::BOT_STATE_NON_COMBAT))
         return false;
 
-    return BuffTrigger::IsActive() &&
-           AI_VALUE2(uint8, "mana", "self target") < (sPlayerbotAIConfig.LowMana / 2);
+    // 2.4.3 Viper's regeneration grows as mana falls, but the shots (Steady, Multi-Shot) left TBC census hunters
+    // out of mana: Viper below 30% (back to Hawk at 60%, the Dragonhawk/Hawk trigger).
+    uint8 const threshold = PlayerbotEra::IsTbc() ? 30 : sPlayerbotAIConfig.LowMana / 2;
+    return BuffTrigger::IsActive() && AI_VALUE2(uint8, "mana", "self target") < threshold;
 }
 
 bool HunterAspectOfThePackTrigger::IsActive()

@@ -118,6 +118,10 @@ public:
         creators["mangle (cat)"] = &DruidTriggerFactoryInternal::mangle_cat;
         creators["ferocious bite time"] = &DruidTriggerFactoryInternal::ferocious_bite_time;
         creators["ferocious bite execute"] = &DruidTriggerFactoryInternal::ferocious_bite_execute;
+        creators["ferocious bite on dying target"] = &DruidTriggerFactoryInternal::ferocious_bite_on_dying_target;
+        creators["powershift"] = &DruidTriggerFactoryInternal::powershift;
+        creators["swipe (bear) filler"] = &DruidTriggerFactoryInternal::swipe_bear_filler;
+        creators["lifebloom on main tank"] = &DruidTriggerFactoryInternal::lifebloom_on_main_tank;
         creators["hurricane channel check"] = &DruidTriggerFactoryInternal::hurricane_channel_check;
         creators["no healer dps strategy"] = &DruidTriggerFactoryInternal::no_healer_dps_strategy;
         creators["starfall"] = &DruidTriggerFactoryInternal::starfall;
@@ -177,6 +181,10 @@ private:
     static Trigger* mangle_cat(PlayerbotAI* botAI) { return new MangleCatTrigger(botAI); }
     static Trigger* ferocious_bite_time(PlayerbotAI* botAI) { return new FerociousBiteTimeTrigger(botAI); }
     static Trigger* ferocious_bite_execute(PlayerbotAI* botAI) { return new FerociousBiteExecuteTrigger(botAI); }
+    static Trigger* ferocious_bite_on_dying_target(PlayerbotAI* botAI) { return new FerociousBiteDyingTargetTrigger(botAI); }
+    static Trigger* powershift(PlayerbotAI* botAI) { return new PowershiftTrigger(botAI); }
+    static Trigger* swipe_bear_filler(PlayerbotAI* botAI) { return new SwipeBearFillerTrigger(botAI); }
+    static Trigger* lifebloom_on_main_tank(PlayerbotAI* botAI) { return new LifebloomOnMainTankTrigger(botAI); }
     static Trigger* hurricane_channel_check(PlayerbotAI* botAI) { return new HurricaneChannelCheckTrigger(botAI); }
     static Trigger* no_healer_dps_strategy(PlayerbotAI* botAI) { return new NoHealerDpsStrategyTrigger(botAI); }
     static Trigger* starfall(PlayerbotAI* botAI) { return new StarfallTrigger(botAI); }
@@ -218,6 +226,7 @@ public:
         creators["dire bear form"] = &DruidAiObjectContextInternal::dire_bear_form;
         creators["moonkin form"] = &DruidAiObjectContextInternal::moonkin_form;
         creators["cat form"] = &DruidAiObjectContextInternal::cat_form;
+        creators["powershift"] = &DruidAiObjectContextInternal::powershift;
         creators["tree form"] = &DruidAiObjectContextInternal::tree_form;
         creators["travel form"] = &DruidAiObjectContextInternal::travel_form;
         creators["aquatic form"] = &DruidAiObjectContextInternal::aquatic_form;
@@ -316,6 +325,7 @@ private:
     static Action* bear_form(PlayerbotAI* botAI) { return new CastBearFormAction(botAI); }
     static Action* dire_bear_form(PlayerbotAI* botAI) { return new CastDireBearFormAction(botAI); }
     static Action* cat_form(PlayerbotAI* botAI) { return new CastCatFormAction(botAI); }
+    static Action* powershift(PlayerbotAI* botAI) { return new CastPowershiftAction(botAI); }
     static Action* tree_form(PlayerbotAI* botAI) { return new CastTreeFormAction(botAI); }
     static Action* travel_form(PlayerbotAI* botAI) { return new CastTravelFormAction(botAI); }
     static Action* aquatic_form(PlayerbotAI* botAI) { return new CastAquaticFormAction(botAI); }

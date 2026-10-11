@@ -79,3 +79,8 @@ bool MindSearChannelCheckTrigger::IsActive()
     // Not channeling Mind Sear
     return false;
 }
+
+bool ShadowWordDeathSafeTrigger::IsActive()
+{
+    return AI_VALUE2(uint8, "mana", "self target") > 10 && AI_VALUE2(uint8, "health", "self target") >= 50;
+}

@@ -5,6 +5,7 @@
  */
 
 #include "FireMageStrategy.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "Strategy.h"
 
@@ -16,6 +17,15 @@ FireMageStrategy::FireMageStrategy(PlayerbotAI* botAI) : GenericMageStrategy(bot
 // ===== Default Actions =====
 std::vector<NextAction> FireMageStrategy::getDefaultActions()
 {
+    // 2.4.3 (the TBC APL): Combustion (boost) > Fire Blast > Scorch for Fire Vulnerability (a trigger) > Fireball.
+    if (PlayerbotEra::IsTbc())
+        return {
+            NextAction("fire blast", 5.4f),
+            NextAction("fireball", 5.3f),
+            NextAction("frostbolt", 5.2f),   // fire immune target
+            NextAction("shoot", 5.0f)
+        };
+
     return {
         NextAction("fireball", 5.3f),
         NextAction("frostbolt", 5.2f),   // fire immune target
@@ -32,7 +42,7 @@ void FireMageStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     // Debuff Triggers
     triggers.push_back(
         new TriggerNode(
-            "improved scorch",
+            PlayerbotEra::IsTbc() ? "fire vulnerability" : "improved scorch",
             {
                 NextAction("scorch", 19.0f)
             }

@@ -49,6 +49,14 @@ public:
     RiposteAvailableTrigger(PlayerbotAI* botAI) : SpellCanBeCastTrigger(botAI, "riposte") {}
 };
 
+// 2.4.3 (the TBC APL): Envenom at 5 combo points once the target carries five of the rogue's Deadly Poison doses.
+class EnvenomTrigger : public Trigger
+{
+public:
+    EnvenomTrigger(PlayerbotAI* botAI) : Trigger(botAI, "envenom") {}
+    bool IsActive() override;
+};
+
 class RuptureTrigger : public DebuffTrigger
 {
 public:

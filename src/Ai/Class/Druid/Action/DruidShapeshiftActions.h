@@ -34,6 +34,18 @@ public:
     CastCatFormAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "cat form") {}
 };
 
+// 2.4.3 (the TBC APL): leave Cat Form and shift straight back in for Furor's energy.
+class CastPowershiftAction : public CastBuffSpellAction
+{
+public:
+    CastPowershiftAction(PlayerbotAI* botAI) : CastBuffSpellAction(botAI, "cat form") {}
+
+    std::string const getName() override { return "powershift"; }
+    bool isUseful() override { return botAI->HasAura("cat form", bot); }
+    bool isPossible() override { return true; }
+    bool Execute(Event event) override;
+};
+
 class CastTreeFormAction : public CastBuffSpellAction
 {
 public:

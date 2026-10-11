@@ -139,6 +139,7 @@ class ColdSnapTrigger : public TwoTriggers
 {
 public:
     ColdSnapTrigger(PlayerbotAI* botAI) : TwoTriggers(botAI, "icy veins on cd", "deep freeze on cd") {}
+    bool IsActive() override;
 };
 
 class MirrorImageTrigger : public BoostTrigger
@@ -223,6 +224,24 @@ class FireballTrigger : public DebuffTrigger
 {
 public:
     FireballTrigger(PlayerbotAI* botAI) : DebuffTrigger(botAI, "fireball", 1, true) {}
+};
+
+// 2.4.3 (the TBC APL): with Improved Scorch, Scorch until the target has five Fire Vulnerability stacks, and again
+// before they run out.
+class FireVulnerabilityTrigger : public Trigger
+{
+public:
+    FireVulnerabilityTrigger(PlayerbotAI* botAI) : Trigger(botAI, "fire vulnerability") {}
+    bool IsActive() override;
+};
+
+// 2.4.3 (the TBC APL): each Arcane Blast stack raises the next one's cost, so it stops at three stacks once mana is at
+// 30% or less (Frostbolt until they wear off).
+class ArcaneBlastWithManaTrigger : public Trigger
+{
+public:
+    ArcaneBlastWithManaTrigger(PlayerbotAI* botAI) : Trigger(botAI, "arcane blast with mana") {}
+    bool IsActive() override;
 };
 
 class ImprovedScorchTrigger : public DebuffTrigger

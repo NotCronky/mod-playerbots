@@ -61,8 +61,11 @@ public:
         creators["high mana"] = &TriggerContext::HighMana;
         creators["almost full mana"] = &TriggerContext::AlmostFullMana;
         creators["enough mana"] = &TriggerContext::EnoughMana;
+        creators["mana above 10"] = &TriggerContext::ManaAbove10;
         creators["mana above 30"] = &TriggerContext::ManaAbove30;
         creators["mana above 40"] = &TriggerContext::ManaAbove40;
+        creators["mana below 20"] = &TriggerContext::ManaBelow20;
+        creators["mana below 30"] = &TriggerContext::ManaBelow30;
 
         creators["party member critical health"] = &TriggerContext::PartyMemberCriticalHealth;
         creators["party member low health"] = &TriggerContext::PartyMemberLowHealth;
@@ -329,8 +332,11 @@ private:
     static Trigger* HighMana(PlayerbotAI* botAI) { return new HighManaTrigger(botAI); }
     static Trigger* AlmostFullMana(PlayerbotAI* botAI) { return new AlmostFullManaTrigger(botAI); }
     static Trigger* EnoughMana(PlayerbotAI* botAI) { return new EnoughManaTrigger(botAI); }
+    static Trigger* ManaAbove10(PlayerbotAI* botAI) { return new ManaAbovePctTrigger(botAI, 10, "mana above 10"); }
     static Trigger* ManaAbove30(PlayerbotAI* botAI) { return new ManaAbovePctTrigger(botAI, 30, "mana above 30"); }
     static Trigger* ManaAbove40(PlayerbotAI* botAI) { return new ManaAbovePctTrigger(botAI, 40, "mana above 40"); }
+    static Trigger* ManaBelow20(PlayerbotAI* botAI) { return new ManaBelowPctTrigger(botAI, 20, "mana below 20"); }
+    static Trigger* ManaBelow30(PlayerbotAI* botAI) { return new ManaBelowPctTrigger(botAI, 30, "mana below 30"); }
     static Trigger* LightRageAvailable(PlayerbotAI* botAI) { return new LightRageAvailableTrigger(botAI); }
     static Trigger* MediumRageAvailable(PlayerbotAI* botAI) { return new MediumRageAvailableTrigger(botAI); }
     static Trigger* HighRageAvailable(PlayerbotAI* botAI) { return new HighRageAvailableTrigger(botAI); }

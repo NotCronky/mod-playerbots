@@ -20,6 +20,52 @@ std::vector<NextAction> DiscPriestStrategy::getDefaultActions()
     };
 }
 
+// 2.4.3 (the TBC APL), Holy and Discipline: Prayer of Mending whenever someone is hurt > Renew under 85% > Circle of
+// Healing (Holy) on group damage > Flash Heal under 65%, Flash Heal before Renew below that. No Greater Heal, Heal or
+// Penance; Power Word: Shield and Pain Suppression stay for emergencies.
+void AddTbcPriestHealTriggers(std::vector<TriggerNode*>& triggers)
+{
+    triggers.push_back(new TriggerNode("party member to heal out of spell range",
+                                       { NextAction("reach party member to heal", ACTION_CRITICAL_HEAL + 10) }));
+    triggers.push_back(new TriggerNode("medium group heal setting",
+                                       {
+                                           NextAction("prayer of mending on party", ACTION_CRITICAL_HEAL + 6),
+                                           NextAction("circle of healing on party", ACTION_CRITICAL_HEAL + 5),
+                                           NextAction("prayer of healing on party", ACTION_CRITICAL_HEAL + 4)
+                                       }));
+    triggers.push_back(new TriggerNode("group heal setting",
+                                       {
+                                           NextAction("prayer of mending on party", ACTION_MEDIUM_HEAL + 9),
+                                           NextAction("circle of healing on party", ACTION_MEDIUM_HEAL + 8)
+                                       }));
+    triggers.push_back(new TriggerNode("party member critical health",
+                                       {
+                                           NextAction("power word: shield on party", ACTION_CRITICAL_HEAL + 5),
+                                           NextAction("prayer of mending on party", ACTION_CRITICAL_HEAL + 4),
+                                           NextAction("flash heal on party", ACTION_CRITICAL_HEAL + 2)
+                                       }));
+    triggers.push_back(new TriggerNode("party member low health",
+                                       {
+                                           NextAction("prayer of mending on party", ACTION_MEDIUM_HEAL + 4),
+                                           NextAction("flash heal on party", ACTION_MEDIUM_HEAL + 2),
+                                           NextAction("renew on party", ACTION_MEDIUM_HEAL + 1)
+                                       }));
+    triggers.push_back(new TriggerNode("party member medium health",
+                                       {
+                                           NextAction("prayer of mending on party", ACTION_LIGHT_HEAL + 9),
+                                           NextAction("renew on party", ACTION_LIGHT_HEAL + 6),
+                                           NextAction("flash heal on party", ACTION_LIGHT_HEAL + 5)
+                                       }));
+    triggers.push_back(new TriggerNode("party member almost full health",
+                                       {
+                                           NextAction("prayer of mending on party", ACTION_LIGHT_HEAL + 3),
+                                           NextAction("renew on party", ACTION_LIGHT_HEAL + 2)
+                                       }));
+    triggers.push_back(new TriggerNode("critical health", { NextAction("pain suppression", ACTION_EMERGENCY + 1) }));
+    triggers.push_back(new TriggerNode("protect party member",
+                                       { NextAction("pain suppression on party", ACTION_EMERGENCY) }));
+}
+
 // 1.12, Discipline: Power Word: Shield only on someone about to die (it cost a disc priest a third of its casts and most
 // of its mana when it went on every hurt member), Prayer of Healing on group damage, Greater Heal or Flash Heal for big
 // deficits, Heal (Lesser Heal before it) for steady damage, Renew on the lightly hurt. No Penance or Prayer of Mending.
@@ -53,6 +99,11 @@ void DiscPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericPriestStrategy::InitTriggers(triggers);
 
+    if (PlayerbotEra::IsTbc())
+    {
+        AddTbcPriestHealTriggers(triggers);
+        return;
+    }
     if (PlayerbotEra::IsVanilla())
     {
         AddVanillaPriestHealTriggers(triggers);

@@ -152,6 +152,20 @@ void WarlockCcStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 // To disable, type "co -curse of agony"
 void WarlockCurseOfAgonyStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
+    // 2.4.3 (the TBC APL): Amplify Curse before the curse, Curse of Doom on targets that live a minute, Curse of Agony
+    // on the rest, ahead of the other DoTs.
+    if (PlayerbotEra::IsTbc())
+    {
+        triggers.push_back(new TriggerNode("curse of doom long fight",
+                                           { NextAction("amplify curse", 18.8f), NextAction("curse of doom", 18.7f) }));
+        triggers.push_back(new TriggerNode("curse of agony short fight",
+                                           { NextAction("amplify curse", 18.65f),
+                                             NextAction("curse of agony", 18.6f) }));
+        triggers.push_back(new TriggerNode("curse of agony on attacker",
+                                           { NextAction("curse of agony on attacker", 18.5f) }));
+        return;
+    }
+
     triggers.push_back(
         new TriggerNode(
             "curse of agony on attacker",

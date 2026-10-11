@@ -7,6 +7,7 @@
 #include "MageTriggers.h"
 #include "DynamicObject.h"
 #include "Player.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 #include "Spell.h"
@@ -121,6 +122,40 @@ bool FlamestrikeNearbyTrigger::IsActive()
             return true;
     }
     return false;
+}
+
+bool ColdSnapTrigger::IsActive()
+{
+    // 2.4.3 (the TBC APL) has no Deep Freeze: Cold Snap once Icy Veins is on cooldown and has worn off.
+    if (PlayerbotEra::IsTbc())
+    {
+        uint32 const icyVeins = AI_VALUE2(uint32, "spell id", "icy veins");
+        return icyVeins && bot->HasSpellCooldown(icyVeins) && !botAI->HasAura("icy veins", bot);
+    }
+
+    return TwoTriggers::IsActive();
+}
+
+bool FireVulnerabilityTrigger::IsActive()
+{
+    constexpr uint32 SPELL_FIRE_VULNERABILITY = 22959;
+
+    Unit* target = AI_VALUE(Unit*, "current target");
+    if (!target || !target->IsAlive() || !botAI->HasAura("improved scorch", bot))
+        return false;
+
+    Aura const* vulnerability = target->GetAura(SPELL_FIRE_VULNERABILITY);
+    return !vulnerability || vulnerability->GetStackAmount() < 5 ||
+           vulnerability->GetDuration() < 3 * IN_MILLISECONDS;
+}
+
+bool ArcaneBlastWithManaTrigger::IsActive()
+{
+    if (!botAI->HasSpell("arcane blast"))
+        return false;
+
+    Aura const* stacks = botAI->GetAura("arcane blast", bot);
+    return !stacks || stacks->GetStackAmount() < 3 || AI_VALUE2(uint8, "mana", "self target") > 30;
 }
 
 bool ImprovedScorchTrigger::IsActive()

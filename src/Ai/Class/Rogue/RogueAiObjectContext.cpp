@@ -66,6 +66,8 @@ public:
         creators["kick"] = &RogueTriggerFactoryInternal::kick;
         creators["riposte"] = &RogueTriggerFactoryInternal::riposte;
         creators["rupture"] = &RogueTriggerFactoryInternal::rupture;
+        creators["envenom"] = &RogueTriggerFactoryInternal::envenom;
+        creators["adrenaline rush on low energy"] = &RogueTriggerFactoryInternal::adrenaline_rush_on_low_energy;
         creators["slice and dice"] = &RogueTriggerFactoryInternal::slice_and_dice;
         creators["hunger for blood"] = &RogueTriggerFactoryInternal::hunger_for_blood;
         creators["expose armor"] = &RogueTriggerFactoryInternal::expose_armor;
@@ -90,6 +92,11 @@ private:
     static Trigger* kick(PlayerbotAI* botAI) { return new KickInterruptSpellTrigger(botAI); }
     static Trigger* riposte(PlayerbotAI* botAI) { return new RiposteAvailableTrigger(botAI); }
     static Trigger* rupture(PlayerbotAI* botAI) { return new RuptureTrigger(botAI); }
+    static Trigger* envenom(PlayerbotAI* botAI) { return new EnvenomTrigger(botAI); }
+    static Trigger* adrenaline_rush_on_low_energy(PlayerbotAI* botAI)
+    {
+        return new TwoTriggers(botAI, "adrenaline rush", "low energy");
+    }
     static Trigger* slice_and_dice(PlayerbotAI* botAI) { return new SliceAndDiceTrigger(botAI); }
     static Trigger* hunger_for_blood(PlayerbotAI* botAI) { return new HungerForBloodTrigger(botAI); }
     static Trigger* expose_armor(PlayerbotAI* botAI) { return new ExposeArmorTrigger(botAI); }

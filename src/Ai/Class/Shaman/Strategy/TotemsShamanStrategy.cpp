@@ -70,7 +70,9 @@ void MagmaTotemStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     GenericShamanStrategy::InitTriggers(triggers);
     triggers.push_back(new TriggerNode("set magma totem", { NextAction("set magma totem", 60.0f) }));
-    triggers.push_back(new TriggerNode("no fire totem", { NextAction("magma totem", 55.0f) }));
+    // 2.4.3 (the TBC APL): Magma Totem above 40% mana.
+    triggers.push_back(new TriggerNode(PlayerbotEra::IsTbc() ? "no fire totem with mana" : "no fire totem",
+                                       { NextAction("magma totem", 55.0f) }));
 }
 
 FlametongueTotemStrategy::FlametongueTotemStrategy(PlayerbotAI* botAI) : GenericShamanStrategy(botAI) {}
