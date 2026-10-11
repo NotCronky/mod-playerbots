@@ -22,7 +22,7 @@ static bool IsBlessingTargetCandidate(Player* bot, Player* player)
     if (player->IsGameMaster())
         return false;
 
-    return bot->GetDistance(player) < sPlayerbotAIConfig.spellDistance * 2 &&
+    return bot->GetDistance(player) < sPlayerbotAIConfig.SpellDistance * 2 &&
            bot->IsWithinLOS(player->GetPositionX(), player->GetPositionY(),
                             player->GetPositionZ());
 }
@@ -61,9 +61,9 @@ static Unit* FindBlessingTarget(
 
         if (player == master)
             masters.push_back(player);
-        else if (botAI->IsHeal(player))
+        else if (PlayerbotAI::IsHeal(player))
             healers.push_back(player);
-        else if (botAI->IsTank(player))
+        else if (PlayerbotAI::IsTank(player))
             tanks.push_back(player);
         else
             others.push_back(player);
@@ -103,7 +103,9 @@ static inline bool IsTankRole(Player* player)
 
     if (PlayerbotAI* otherAI = GET_PLAYERBOT_AI(player))
     {
-        if (otherAI->HasStrategy("tank", BOT_STATE_NON_COMBAT) ||
+        if (otherAI->HasStrategy("prot", BOT_STATE_NON_COMBAT) ||
+            otherAI->HasStrategy("prot", BOT_STATE_COMBAT)     ||
+            otherAI->HasStrategy("tank", BOT_STATE_NON_COMBAT) ||
             otherAI->HasStrategy("tank", BOT_STATE_COMBAT)     ||
             otherAI->HasStrategy("tank face", BOT_STATE_NON_COMBAT) ||
             otherAI->HasStrategy("tank face", BOT_STATE_COMBAT)     ||
@@ -615,7 +617,7 @@ bool CastJudgementAction::isUseful()
         if (!target || !bot->IsWithinCombatRange(target, 10.0f))
             return false;
 
-        if (!botAI->IsTank(bot) && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana)
+        if (!botAI->IsTank(bot) && AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.MediumMana)
             return false;
     }
 

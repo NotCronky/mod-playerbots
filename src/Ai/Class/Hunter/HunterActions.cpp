@@ -116,7 +116,7 @@ std::vector<NextAction> CastWingClipAction::getPrerequisites()
 bool CastSerpentStingAction::isUseful()
 {
     if (PlayerbotEra::IsVanilla())
-        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.mediumMana &&
+        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.MediumMana &&
                CastDebuffSpellAction::isUseful();
 
     // Bypass TTL check
@@ -126,7 +126,7 @@ bool CastSerpentStingAction::isUseful()
 bool CastSerpentStingOnAttackerAction::isUseful()
 {
     if (PlayerbotEra::IsVanilla())
-        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.mediumMana &&
+        return AI_VALUE2(uint8, "mana", "self target") >= sPlayerbotAIConfig.MediumMana &&
                CastDebuffSpellOnAttackerAction::isUseful();
 
     // Bypass TTL check

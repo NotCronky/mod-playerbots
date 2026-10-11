@@ -12,7 +12,6 @@
 #include "PlayerbotAI.h"
 #include "PlayerbotAIConfig.h"
 #include "Playerbots.h"
-#include "ServerFacade.h"
 #include "SharedDefines.h"
 #include "Spell.h"
 
@@ -73,7 +72,7 @@ bool HuntersPetLowHealthTrigger::IsActive()
 bool HuntersPetMediumHealthTrigger::IsActive()
 {
     Unit* pet = AI_VALUE(Unit*, "pet target");
-    return pet && AI_VALUE2(uint8, "health", "pet target") < sPlayerbotAIConfig.mediumHealth &&
+    return pet && AI_VALUE2(uint8, "health", "pet target") < sPlayerbotAIConfig.MediumHealth &&
            !AI_VALUE2(bool, "dead", "pet target") && !AI_VALUE2(bool, "mounted", "self target");
 }
 
@@ -91,7 +90,7 @@ bool HunterAspectOfTheViperTrigger::IsActive()
         return false;
 
     return BuffTrigger::IsActive() &&
-           AI_VALUE2(uint8, "mana", "self target") < (sPlayerbotAIConfig.lowMana / 2);
+           AI_VALUE2(uint8, "mana", "self target") < (sPlayerbotAIConfig.LowMana / 2);
 }
 
 bool HunterAspectOfThePackTrigger::IsActive()
@@ -122,22 +121,6 @@ bool AutoShotTrigger::IsActive()
 
     Spell* autoRepeat = bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
     return !autoRepeat || autoRepeat->m_targets.GetUnitTargetGUID() != target->GetGUID();
-}
-
-bool SwitchToRangedTrigger::IsActive()
-{
-    Unit* target = AI_VALUE(Unit*, "current target");
-    return botAI->HasStrategy("close", BOT_STATE_COMBAT) && target &&
-           (target->GetVictim() != bot &&
-            ServerFacade::instance().IsDistanceGreaterThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
-}
-
-bool SwitchToMeleeTrigger::IsActive()
-{
-    Unit* target = AI_VALUE(Unit*, "current target");
-    return botAI->HasStrategy("ranged", BOT_STATE_COMBAT) && target &&
-           (target->GetVictim() == bot &&
-            ServerFacade::instance().IsDistanceLessOrEqualThan(AI_VALUE2(float, "distance", "current target"), 8.0f));
 }
 
 // Valid targets for "Improved Tracking".

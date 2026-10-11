@@ -127,7 +127,7 @@ Unit* CastFocusMagicOnPartyAction::GetTarget()
     {
         Player* member = ref->GetSource();
         if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap() ||
-            bot->GetDistance(member) > sPlayerbotAIConfig.spellDistance || member->HasAura(54646))  // Focus Magic
+            bot->GetDistance(member) > sPlayerbotAIConfig.SpellDistance || member->HasAura(54646))  // Focus Magic
         {
             continue;
         }
@@ -135,10 +135,10 @@ Unit* CastFocusMagicOnPartyAction::GetTarget()
         if (member->getClass() == CLASS_MAGE)
             return member;
 
-        if (!casterDps && botAI->IsCaster(member) && botAI->IsDps(member))
+        if (!casterDps && PlayerbotAI::IsCaster(member) && PlayerbotAI::IsDps(member))
             casterDps = member;
 
-        if (!healer && botAI->IsHeal(member))
+        if (!healer && PlayerbotAI::IsHeal(member))
             healer = member;
 
         if (!target)

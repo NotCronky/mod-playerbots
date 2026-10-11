@@ -8,10 +8,10 @@
 #include "PlayerbotEra.h"
 #include "Playerbots.h"
 
-class HolyPriestStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
+class HolyDpsPriestStrategyActionNodeFactory : public NamedObjectFactory<ActionNode>
 {
 public:
-    HolyPriestStrategyActionNodeFactory() { creators["smite"] = &smite; }
+    HolyDpsPriestStrategyActionNodeFactory() { creators["smite"] = &smite; }
 
 private:
     static ActionNode* smite([[maybe_unused]] PlayerbotAI* botAI)
@@ -25,12 +25,12 @@ private:
     }
 };
 
-HolyPriestStrategy::HolyPriestStrategy(PlayerbotAI* botAI) : HealPriestStrategy(botAI)
+HolyDpsPriestStrategy::HolyDpsPriestStrategy(PlayerbotAI* botAI) : GenericPriestStrategy(botAI)
 {
-    actionNodeFactories.Add(new HolyPriestStrategyActionNodeFactory());
+    actionNodeFactories.Add(new HolyDpsPriestStrategyActionNodeFactory());
 }
 
-std::vector<NextAction> HolyPriestStrategy::getDefaultActions()
+std::vector<NextAction> HolyDpsPriestStrategy::getDefaultActions()
 {
     return {
         NextAction("smite", ACTION_DEFAULT + 0.2f),
@@ -39,9 +39,9 @@ std::vector<NextAction> HolyPriestStrategy::getDefaultActions()
     };
 }
 
-void HolyPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
+void HolyDpsPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
-    HealPriestStrategy::InitTriggers(triggers);
+    GenericPriestStrategy::InitTriggers(triggers);
 
     triggers.push_back(
         new TriggerNode(
@@ -75,11 +75,36 @@ void HolyPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
+    triggers.push_back(
+        new TriggerNode(
+            "party member low health",
+            {
+                NextAction("power word: shield on party", ACTION_MEDIUM_HEAL + 3),
+                NextAction("flash heal on party", ACTION_MEDIUM_HEAL + 2)
+            }
+        )
+    );
+    triggers.push_back(
+        new TriggerNode(
+            "party member medium health",
+            {
+                NextAction("renew on party", ACTION_LIGHT_HEAL + 2)
+            }
+        )
+    );
+    triggers.push_back(
+        new TriggerNode(
+            "party member to heal out of spell range",
+            {
+                NextAction("reach party member to heal", ACTION_CRITICAL_HEAL + 10)
+            }
+        )
+    );
 }
 
 HolyHealPriestStrategy::HolyHealPriestStrategy(PlayerbotAI* botAI) : GenericPriestStrategy(botAI)
 {
-    actionNodeFactories.Add(new GenericPriestStrategyActionNodeFactory());
+    // No custom ActionNodeFactory needed
 }
 
 std::vector<NextAction> HolyHealPriestStrategy::getDefaultActions()
@@ -107,7 +132,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "medium group heal setting",
@@ -119,7 +143,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "party member critical health",
@@ -132,7 +155,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "party member low health",
@@ -144,7 +166,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "party member medium health",
@@ -156,7 +177,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "party member almost full health",
@@ -166,7 +186,6 @@ void HolyHealPriestStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
             }
         )
     );
-
     triggers.push_back(
         new TriggerNode(
             "party member to heal out of spell range",

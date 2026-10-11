@@ -14,7 +14,7 @@
 bool PlayerbotRotation::IsUsed([[maybe_unused]] Player* bot)
 {
 #ifdef PLAYERBOTS_ROTATION_BOT
-    return sPlayerbotAIConfig.useRotationBot && RotationBotBridge::HasProfile(bot);
+    return sPlayerbotAIConfig.UseRotationBot && RotationBotBridge::HasProfile(bot);
 #else
     return false;
 #endif

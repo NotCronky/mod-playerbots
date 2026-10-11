@@ -57,7 +57,7 @@ bool CastCasterFormAction::isUseful()
     if (PlayerbotEra::IsVanilla())
         return true;
 
-    return AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.mediumHealth;
+    return AI_VALUE2(uint8, "mana", "self target") > sPlayerbotAIConfig.MediumHealth;
 }
 
 bool CastCancelDruidAction::Execute(Event /*event*/)

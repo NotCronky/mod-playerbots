@@ -843,7 +843,7 @@ bool IsEligibleGroupForAutoBlessings(Group const* group)
     if (!group)
         return false;
 
-    switch (sPlayerbotAIConfig.autoGreaterBlessings)
+    switch (sPlayerbotAIConfig.AutoGreaterBlessings)
     {
         case AutoPartyBuffMode::RAID_ONLY:
             return group->isRaidGroup();

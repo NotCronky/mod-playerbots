@@ -200,7 +200,7 @@ bool CastSpellAction::isUseful()
         return false;
 
     // float combatReach = bot->GetCombatReach() + target->GetCombatReach();
-    // if (!botAI->IsRanged(bot))
+    // if (!PlayerbotAI::IsRanged(bot))
     //     combatReach += 4.0f / 3.0f;
 
     return AI_VALUE2(bool, "spell cast useful", spell);
@@ -211,7 +211,7 @@ bool CastSpellAction::isPossible()
 {
     if (botAI->IsInVehicle() && !botAI->IsInVehicle(false, false, true))
     {
-        if (!sPlayerbotAIConfig.logInGroupOnly || (bot->GetGroup() && botAI->HasGameClientMaster()))
+        if (!sPlayerbotAIConfig.LogInGroupOnly || (bot->GetGroup() && botAI->HasGameClientMaster()))
             LOG_DEBUG("playerbots", "Can cast spell failed. Vehicle. - bot name: {}", bot->GetName());
 
         return false;
@@ -222,7 +222,7 @@ bool CastSpellAction::isPossible()
 
     if (spell == "mount" && bot->IsInCombat())
     {
-        if (!sPlayerbotAIConfig.logInGroupOnly || (bot->GetGroup() && botAI->HasGameClientMaster()))
+        if (!sPlayerbotAIConfig.LogInGroupOnly || (bot->GetGroup() && botAI->HasGameClientMaster()))
             LOG_DEBUG("playerbots", "Can cast spell failed. Mount. - bot name: {}", bot->GetName());
 
         bot->Dismount();
@@ -299,7 +299,7 @@ bool GroupBuffSpellAction::isUseful()
     // 1.12 and 2.4.3: buffing others waits for mana, so a healer drinks instead of starting the pull drained (and
     // instead of retrying an unaffordable buff: thousands of out-of-mana refusals per Molten Core census run).
     if (PlayerbotEra::IsClassic() && target != bot && bot->GetMaxPower(POWER_MANA) &&
-        AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.mediumMana)
+        AI_VALUE2(uint8, "mana", "self target") < sPlayerbotAIConfig.MediumMana)
         return false;
 
     if (ai::buff::IsGroupVariantEnabled(bot, spell))
@@ -685,8 +685,8 @@ bool UseTrinketAction::UseTrinket(Item* item)
                     return false;
 
                 uint8 const manaPct = AI_VALUE2(uint8, "mana", "self target");
-                if ((restoresMana && manaPct >= sPlayerbotAIConfig.mediumMana) ||
-                    manaPct >= sPlayerbotAIConfig.highMana)
+                if ((restoresMana && manaPct >= sPlayerbotAIConfig.MediumMana) ||
+                    manaPct >= sPlayerbotAIConfig.HighMana)
                 {
                     return false;
                 }
@@ -695,7 +695,7 @@ bool UseTrinketAction::UseTrinket(Item* item)
             if (defensiveTankEffect)
             {
                 uint8 const healthPct = AI_VALUE2(uint8, "health", "self target");
-                if (healthPct > sPlayerbotAIConfig.lowHealth)
+                if (healthPct > sPlayerbotAIConfig.LowHealth)
                     return false;
             }
 
@@ -723,6 +723,8 @@ bool UseTrinketAction::UseTrinket(Item* item)
     targetFlag = TARGET_FLAG_NONE;
     packet << targetFlag << bot->GetPackGUID();
 
+    // HandleUseItemOpcode can destroy the trinket on its last charge.
+    uint32 const itemId = item->GetEntry();
     bot->GetSession()->HandleUseItemOpcode(packet);
 
     uint32 const now = getMSTime();
@@ -731,7 +733,7 @@ bool UseTrinketAction::UseTrinket(Item* item)
     {
         if (itemSpellCooldown > 0)
         {
-            uint64 const itemCooldownKey = (static_cast<uint64>(item->GetEntry()) << 32) | spellId;
+            uint64 const itemCooldownKey = (static_cast<uint64>(itemId) << 32) | spellId;
             trinketItemCooldownExpiries[itemCooldownKey] = now + static_cast<uint32>(itemSpellCooldown);
         }
 
