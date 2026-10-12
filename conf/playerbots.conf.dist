@@ -480,6 +480,12 @@ Playerbots.ApplyInstanceStrategies = 1
 # Default: 0 (disabled)
 Playerbots.UseRotationBot = 0
 
+# Answer the bot panel's addon messages (prefix PBP; the progressive realms' client mods): the bot roster,
+# health and power, talent builds, and role changes run as one step (talents, gear, maintenance).
+# Commands keep the same security checks as whispered ones.
+# Default: 0 (disabled)
+Playerbots.PanelApi.Enable = 0
+
 # Enable auto avoid aoe strategy
 # Default: 1 (enabled)
 Playerbots.AutoAvoidAoe = 1

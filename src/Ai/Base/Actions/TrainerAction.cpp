@@ -194,6 +194,12 @@ bool MaintenanceAction::Execute(Event /*event*/)
     }
 
     botAI->TellMaster("I'm maintaining");
+    Maintain(botAI, bot);
+    return true;
+}
+
+void MaintenanceAction::Maintain(PlayerbotAI* botAI, Player* bot)
+{
     PlayerbotFactory factory(bot, bot->GetLevel());
 
     if (!botAI->IsAltBot())
@@ -282,8 +288,6 @@ bool MaintenanceAction::Execute(Event /*event*/)
 
     bot->DurabilityRepairAll(false, 1.0f, false);
     bot->SendTalentsInfoData(false);
-
-    return true;
 }
 
 bool BisGearAction::RunAutogearFallback(uint16 effectiveIlvl)
@@ -547,7 +551,7 @@ bool RemoveGlyphAction::Execute(Event /*event*/)
     return true;
 }
 
-static uint32 GetWornItemLevelAverage(Player* player)
+uint32 GetWornItemLevelAverage(Player* player)
 {
     uint32 sumLevel = 0;
     uint32 count = 0;

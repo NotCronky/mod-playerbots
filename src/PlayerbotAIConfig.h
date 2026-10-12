@@ -125,6 +125,7 @@ public:
     uint32 ForceRebuffMarginSecs;
     bool AutoAvoidAoe;
     bool UseRotationBot;
+    bool PanelApiEnable;
     float MaxAoeAvoidRadius;
     std::set<uint32> AoeAvoidSpellWhitelist;
     bool TellWhenAvoidAoe;

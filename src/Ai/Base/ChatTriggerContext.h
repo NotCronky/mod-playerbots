@@ -64,6 +64,7 @@ public:
         creators["de"] = &ChatTriggerContext::dead;
         creators["trainer"] = &ChatTriggerContext::trainer;
         creators["maintenance"] = &ChatTriggerContext::maintenance;
+        creators["panel"] = &ChatTriggerContext::panel;
         creators["remove glyph"] = &ChatTriggerContext::remove_glyph;
         creators["autogear"] = &ChatTriggerContext::autogear;
         creators["autogear bis"] = &ChatTriggerContext::autogear_bis;
@@ -223,6 +224,7 @@ private:
     static Trigger* pull_rti(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "pull rti"); }
     static Trigger* trainer(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "trainer"); }
     static Trigger* maintenance(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "maintenance"); }
+    static Trigger* panel(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "panel"); }
     static Trigger* remove_glyph(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "remove glyph"); }
     static Trigger* autogear(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "autogear"); }
     static Trigger* autogear_bis(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "autogear bis"); }

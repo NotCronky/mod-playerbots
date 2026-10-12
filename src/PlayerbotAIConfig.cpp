@@ -132,6 +132,7 @@ bool PlayerbotAIConfig::Initialize()
     HighMana = sConfigMgr->GetOption<int32>("Playerbots.HighMana", 65);
     AutoSaveMana = sConfigMgr->GetOption<bool>("Playerbots.AutoSaveMana", true);
     UseRotationBot = sConfigMgr->GetOption<bool>("Playerbots.UseRotationBot", false);
+    PanelApiEnable = sConfigMgr->GetOption<bool>("Playerbots.PanelApi.Enable", false);
     SaveManaThreshold = sConfigMgr->GetOption<int32>("Playerbots.SaveManaThreshold", 60);
     switch (sConfigMgr->GetOption<uint32>("Playerbots.AutoGreaterBlessings", 1))
     {

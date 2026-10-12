@@ -44,6 +44,7 @@
 #include "NamedObjectContext.h"
 #include "NewRpgAction.h"
 #include "OpenItemAction.h"
+#include "PanelAction.h"
 #include "PassLeadershipToMasterAction.h"
 #include "PetsAction.h"
 #include "PositionAction.h"
@@ -139,6 +140,7 @@ public:
         creators["de"] = &ChatActionContext::dead;
         creators["trainer"] = &ChatActionContext::trainer;
         creators["maintenance"] = &ChatActionContext::maintenance;
+        creators["panel"] = &ChatActionContext::panel;
         creators["remove glyph"] = &ChatActionContext::remove_glyph;
         creators["autogear"] = &ChatActionContext::autogear;
         creators["autogear bis"] = &ChatActionContext::autogear_bis;
@@ -264,6 +266,7 @@ private:
     static Action* pull_rti_target(PlayerbotAI* botAI) { return new PullRtiTargetAction(botAI); }
     static Action* trainer(PlayerbotAI* botAI) { return new TrainerAction(botAI); }
     static Action* maintenance(PlayerbotAI* botAI) { return new MaintenanceAction(botAI); }
+    static Action* panel(PlayerbotAI* botAI) { return new PanelAction(botAI); }
     static Action* remove_glyph(PlayerbotAI* botAI) { return new RemoveGlyphAction(botAI); }
     static Action* autogear(PlayerbotAI* botAI) { return new AutoGearAction(botAI); }
     static Action* autogear_bis(PlayerbotAI* botAI) { return new BisGearAction(botAI); }

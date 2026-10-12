@@ -11,9 +11,13 @@
 #include "ChatHelper.h"
 
 class Creature;
+class Player;
 class PlayerbotAI;
 
 struct TrainerSpell;
+
+// Average item level of what the player wears (shirt and tabard left out); 0 with nothing equipped.
+uint32 GetWornItemLevelAverage(Player* player);
 
 class TrainerAction : public Action
 {
@@ -38,6 +42,9 @@ class MaintenanceAction : public Action
 public:
     MaintenanceAction(PlayerbotAI* botAI) : Action(botAI, "maintenance") {}
     bool Execute(Event event) override;
+
+    // The command's work without its chat (the bot panel's role change and refresh).
+    static void Maintain(PlayerbotAI* botAI, Player* bot);
 };
 
 class RemoveGlyphAction : public Action
