@@ -6,6 +6,7 @@
 
 #include "GenericPaladinStrategy.h"
 #include "GenericPaladinStrategyActionNodeFactory.h"
+#include "PlayerbotEra.h"
 
 GenericPaladinStrategy::GenericPaladinStrategy(PlayerbotAI* botAI) : CombatStrategy(botAI)
 {
@@ -26,6 +27,11 @@ void GenericPaladinStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
     triggers.push_back(new TriggerNode("critical health", { NextAction("lay on hands", ACTION_EMERGENCY + 1) }));
     triggers.push_back(new TriggerNode("party member critical health",
         { NextAction("lay on hands on party", ACTION_EMERGENCY + 2) }));
+    // 1.12 and 2.4.3: a paladin heals itself in a fight when low, ahead of its damage (Lay on Hands and Divine Shield
+    // only come at critical health, and not before level 10).
+    if (PlayerbotEra::IsClassic())
+        triggers.push_back(new TriggerNode("low health",
+            { NextAction("holy light", ACTION_CRITICAL_HEAL + 2), NextAction("flash of light", ACTION_CRITICAL_HEAL + 1) }));
     triggers.push_back(new TriggerNode("divine shield low health",
         { NextAction("flash of light", ACTION_EMERGENCY + 3), NextAction("holy light", ACTION_EMERGENCY + 2)}));
     triggers.push_back(new TriggerNode("protect party member",

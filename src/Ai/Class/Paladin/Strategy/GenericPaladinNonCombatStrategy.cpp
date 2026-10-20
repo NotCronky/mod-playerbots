@@ -7,6 +7,7 @@
 #include "GenericPaladinNonCombatStrategy.h"
 #include "AiFactory.h"
 #include "GenericPaladinStrategyActionNodeFactory.h"
+#include "PlayerbotEra.h"
 #include "Playerbots.h"
 
 GenericPaladinNonCombatStrategy::GenericPaladinNonCombatStrategy(PlayerbotAI* botAI) : NonCombatStrategy(botAI)
@@ -19,7 +20,9 @@ void GenericPaladinNonCombatStrategy::InitTriggers(std::vector<TriggerNode*>& tr
     NonCombatStrategy::InitTriggers(triggers);
 
     triggers.push_back(new TriggerNode("party member dead", { NextAction("redemption", ACTION_CRITICAL_HEAL + 10) }));
-    triggers.push_back(new TriggerNode("party member almost full health", { NextAction("flash of light on party", ACTION_MEDIUM_HEAL + 5.0f) }));
+    // 1.12 and 2.4.3: no topping up a scratch out of combat; the mana goes on fights (and food fills the rest).
+    if (!PlayerbotEra::IsClassic())
+        triggers.push_back(new TriggerNode("party member almost full health", { NextAction("flash of light on party", ACTION_MEDIUM_HEAL + 5.0f) }));
     triggers.push_back(new TriggerNode("party member medium health", { NextAction("flash of light on party", ACTION_MEDIUM_HEAL + 6.0f) }));
     triggers.push_back(new TriggerNode("party member low health", { NextAction("holy light on party", ACTION_MEDIUM_HEAL + 7.0f) }));
     triggers.push_back(new TriggerNode("party member critical health", { NextAction("holy light on party", ACTION_MEDIUM_HEAL + 8.0f) }));
