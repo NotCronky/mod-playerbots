@@ -32,6 +32,7 @@
 #include "GenericSpellActions.h"
 #include "GiveItemAction.h"
 #include "GreetAction.h"
+#include "GuideActions.h"
 #include "GuildAcceptAction.h"
 #include "GuildCreateActions.h"
 #include "GuildManagementActions.h"
@@ -279,6 +280,19 @@ public:
         creators["new rpg do quest"] = &ActionContext::new_rpg_do_quest;
         creators["new rpg travel flight"] = &ActionContext::new_rpg_travel_flight;
         creators["new rpg outdoor pvp"] = &ActionContext::new_rpg_outdoor_pvp;
+        creators["guide update"] = &ActionContext::guide_update;
+        creators["guide move"] = &ActionContext::guide_move;
+        creators["guide quest"] = &ActionContext::guide_quest;
+        creators["guide service"] = &ActionContext::guide_service;
+        creators["guide rest"] = &ActionContext::guide_rest;
+        creators["guide hearth"] = &ActionContext::guide_hearth;
+        creators["guide ride"] = &ActionContext::guide_ride;
+        creators["guide open"] = &ActionContext::guide_open;
+        creators["guide use"] = &ActionContext::guide_use;
+        creators["guide use now"] = &ActionContext::guide_use_now;
+        creators["guide release"] = &ActionContext::guide_release;
+        creators["guide corpse run"] = &ActionContext::guide_corpse_run;
+        creators["guide attack"] = &ActionContext::guide_attack;
         creators["wait for attack keep safe distance"] = &ActionContext::wait_for_attack_keep_safe_distance;
     }
 
@@ -485,6 +499,19 @@ private:
     static Action* new_rpg_do_quest(PlayerbotAI* botAI) { return new NewRpgDoQuestAction(botAI); }
     static Action* new_rpg_travel_flight(PlayerbotAI* botAI) { return new NewRpgTravelFlightAction(botAI); }
     static Action* new_rpg_outdoor_pvp(PlayerbotAI* botAI) { return new NewRpgOutdoorPvpAction(botAI); }
+    static Action* guide_update(PlayerbotAI* botAI) { return new GuideUpdateAction(botAI); }
+    static Action* guide_move(PlayerbotAI* botAI) { return new GuideMoveAction(botAI); }
+    static Action* guide_quest(PlayerbotAI* botAI) { return new GuideQuestAction(botAI); }
+    static Action* guide_service(PlayerbotAI* botAI) { return new GuideServiceAction(botAI); }
+    static Action* guide_rest(PlayerbotAI* botAI) { return new GuideRestAction(botAI); }
+    static Action* guide_hearth(PlayerbotAI* botAI) { return new GuideHearthAction(botAI); }
+    static Action* guide_ride(PlayerbotAI* botAI) { return new GuideRideAction(botAI); }
+    static Action* guide_open(PlayerbotAI* botAI) { return new GuideOpenAction(botAI); }
+    static Action* guide_use(PlayerbotAI* botAI) { return new GuideUseAction(botAI); }
+    static Action* guide_use_now(PlayerbotAI* botAI) { return new GuideUseNowAction(botAI); }
+    static Action* guide_release(PlayerbotAI* botAI) { return new GuideReleaseAction(botAI); }
+    static Action* guide_corpse_run(PlayerbotAI* botAI) { return new GuideCorpseRunAction(botAI); }
+    static Action* guide_attack(PlayerbotAI* botAI) { return new GuideAttackAction(botAI); }
     static Action* wait_for_attack_keep_safe_distance(PlayerbotAI* botAI) { return new WaitForAttackKeepSafeDistanceAction(botAI); }
 };
 

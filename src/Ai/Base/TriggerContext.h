@@ -11,6 +11,7 @@
 #include "CureTriggers.h"
 #include "FishingTriggers.h"
 #include "GenericTriggers.h"
+#include "GuideTriggers.h"
 #include "GuildTriggers.h"
 #include "HealthTriggers.h"
 #include "LfgTriggers.h"
@@ -244,6 +245,19 @@ public:
         creators["rpg trade useful"] = &TriggerContext::rpg_trade_useful;
         creators["rpg duel"] = &TriggerContext::rpg_duel;
         creators["go grind status"] = &TriggerContext::go_grind_status;
+        creators["guide move"] = &TriggerContext::guide_move;
+        creators["guide interact"] = &TriggerContext::guide_interact;
+        creators["guide service"] = &TriggerContext::guide_service;
+        creators["guide rest"] = &TriggerContext::guide_rest;
+        creators["guide avoid"] = &TriggerContext::guide_avoid;
+        creators["guide hearth"] = &TriggerContext::guide_hearth;
+        creators["guide ride"] = &TriggerContext::guide_ride;
+        creators["guide open"] = &TriggerContext::guide_open;
+        creators["guide use"] = &TriggerContext::guide_use;
+        creators["guide use now"] = &TriggerContext::guide_use_now;
+        creators["guide release"] = &TriggerContext::guide_release;
+        creators["guide corpse run"] = &TriggerContext::guide_corpse_run;
+        creators["guide attack"] = &TriggerContext::guide_attack;
         creators["go camp status"] = &TriggerContext::go_camp_status;
         creators["wander random status"] = &TriggerContext::wander_random_status;
         creators["wander npc status"] = &TriggerContext::wander_npc_status;
@@ -472,6 +486,52 @@ private:
     static Trigger* can_self_resurrect(PlayerbotAI* botAI) { return new SelfResurrectTrigger(botAI); }
     static Trigger* can_fish(PlayerbotAI* botAI) { return new CanFishTrigger(botAI); }
     static Trigger* can_use_fishing_bobber(PlayerbotAI* botAI) { return new CanUseFishingBobberTrigger(botAI); }
+    static Trigger* guide_move(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide move", GuideTaskTrigger::Kind::Move);
+    }
+    static Trigger* guide_interact(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide interact", GuideTaskTrigger::Kind::Interact);
+    }
+    static Trigger* guide_service(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide service", GuideTaskTrigger::Kind::Service);
+    }
+    static Trigger* guide_release(PlayerbotAI* botAI) { return new GuideDeathTrigger(botAI, "guide release", false); }
+    static Trigger* guide_corpse_run(PlayerbotAI* botAI)
+    {
+        return new GuideDeathTrigger(botAI, "guide corpse run", true);
+    }
+    static Trigger* guide_use(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide use", GuideTaskTrigger::Kind::Use);
+    }
+    static Trigger* guide_use_now(PlayerbotAI* botAI) { return new GuideUseNowTrigger(botAI); }
+    static Trigger* guide_open(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide open", GuideTaskTrigger::Kind::Open);
+    }
+    static Trigger* guide_ride(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide ride", GuideTaskTrigger::Kind::Ride);
+    }
+    static Trigger* guide_hearth(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide hearth", GuideTaskTrigger::Kind::Hearth);
+    }
+    static Trigger* guide_avoid(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide avoid", GuideTaskTrigger::Kind::Avoid);
+    }
+    static Trigger* guide_rest(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide rest", GuideTaskTrigger::Kind::Rest);
+    }
+    static Trigger* guide_attack(PlayerbotAI* botAI)
+    {
+        return new GuideTaskTrigger(botAI, "guide attack", GuideTaskTrigger::Kind::Attack);
+    }
     static Trigger* new_pet(PlayerbotAI* botAI) { return new NewPetTrigger(botAI); }
     static Trigger* wait_for_attack_safe_distance(PlayerbotAI* botAI) { return new WaitForAttackSafeDistanceTrigger(botAI); }
 };

@@ -35,6 +35,7 @@
 #include "MeleeCombatStrategy.h"
 #include "MoveFromGroupStrategy.h"
 #include "NamedObjectContext.h"
+#include "GuideStrategy.h"
 #include "NewRpgStrategy.h"
 #include "NonCombatStrategy.h"
 #include "PassiveStrategy.h"
@@ -95,6 +96,9 @@ public:
         creators["collision"] = &StrategyContext::collision;
         creators["rpg"] = &StrategyContext::rpg;
         creators["new rpg"] = &StrategyContext::new_rpg;
+        creators["guide"] = &StrategyContext::guide;
+        creators["guide death"] = &StrategyContext::guide_death;
+        creators["guide combat"] = &StrategyContext::guide_combat;
         creators["travel"] = &StrategyContext::travel;
         creators["explore"] = &StrategyContext::explore;
         creators["map"] = &StrategyContext::map;
@@ -176,6 +180,9 @@ private:
     static Strategy* collision(PlayerbotAI* botAI) { return new CollisionStrategy(botAI); }
     static Strategy* rpg(PlayerbotAI* botAI) { return new RpgStrategy(botAI); }
     static Strategy* new_rpg(PlayerbotAI* botAI) { return new NewRpgStrategy(botAI); }
+    static Strategy* guide(PlayerbotAI* botAI) { return new GuideStrategy(botAI); }
+    static Strategy* guide_death(PlayerbotAI* botAI) { return new GuideDeathStrategy(botAI); }
+    static Strategy* guide_combat(PlayerbotAI* botAI) { return new GuideCombatStrategy(botAI); }
     static Strategy* travel(PlayerbotAI* botAI) { return new TravelStrategy(botAI); }
     static Strategy* explore(PlayerbotAI* botAI) { return new ExploreStrategy(botAI); }
     static Strategy* map(PlayerbotAI* botAI) { return new MapStrategy(botAI); }

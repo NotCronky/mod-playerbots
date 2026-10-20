@@ -17,6 +17,7 @@
 #include <mysqld_error.h>
 #include "AllMapScript.h"
 #include "GlobalScript.h"
+#include "GuideMgr.h"
 #include "GuildTaskMgr.h"
 #include "PlayerScript.h"
 #include "PlayerbotAIConfig.h"
@@ -24,6 +25,7 @@
 #include "PlayerbotGuildMgr.h"
 #include "PlayerbotSpellRepository.h"
 #include "PlayerbotWorldThreadProcessor.h"
+#include "PullSafety.h"
 #include "RandomPlayerbotMgr.h"
 #include "ScriptMgr.h"
 #include "ServerScript.h"
@@ -534,6 +536,9 @@ public:
 
         PlayerbotSpellRepository::Instance().Initialize();
         CheckMountStateAction::LoadPreferredMounts();
+        // Once: map threads read the guides without locks, so a config reload doesn't reload them.
+        GuideMgr::instance().Load(sPlayerbotAIConfig.GuideDataFile);
+        PullSafety::Load();
 
         LOG_INFO("server.loading", "Playerbots World Thread Processor initialized");
     }

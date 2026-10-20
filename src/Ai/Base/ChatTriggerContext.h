@@ -30,6 +30,7 @@ public:
         creators["los"] = &ChatTriggerContext::los;
         creators["rpg status"] = &ChatTriggerContext::rpg_status;
         creators["rpg do quest"] = &ChatTriggerContext::rpg_do_quest;
+        creators["guide"] = &ChatTriggerContext::guide;
         creators["aura"] = &ChatTriggerContext::aura;
         creators["drop"] = &ChatTriggerContext::drop;
         creators["share"] = &ChatTriggerContext::share;
@@ -261,6 +262,7 @@ private:
     static Trigger* los(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "los"); }
     static Trigger* rpg_status(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "rpg status"); }
     static Trigger* rpg_do_quest(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "rpg do quest"); }
+    static Trigger* guide(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "guide"); }
     static Trigger* aura(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "aura"); }
     static Trigger* loot_all(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "add all loot"); }
     static Trigger* release(PlayerbotAI* botAI) { return new ChatCommandTrigger(botAI, "release"); }

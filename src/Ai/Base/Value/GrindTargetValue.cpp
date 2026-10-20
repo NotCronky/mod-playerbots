@@ -7,6 +7,7 @@
 #include "GrindTargetValue.h"
 #include "NewRpgInfo.h"
 #include "Playerbots.h"
+#include "PullSafety.h"
 #include "ReputationMgr.h"
 #include "ServerFacade.h"
 #include "SharedDefines.h"
@@ -54,6 +55,12 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
     float distance = 0;
     Unit* result = nullptr;
     std::unordered_map<uint32, bool> needForQuestMap;
+    // Playerbots.SafePull: a pull that brings nothing along (one pack for a tank) comes first, then the fewest adds;
+    // distance decides between equals.
+    uint32 bestRank = 0;
+    GuidVector nearby;
+    if (sPlayerbotAIConfig.SafePull)
+        nearby = AI_VALUE(GuidVector, "possible targets no los");
 
     for (ObjectGuid const guid : targets)
     {
@@ -120,6 +127,15 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
                 continue;
         }
 
+        uint32 rank = 0;
+        if (sPlayerbotAIConfig.SafePull)
+        {
+            PullAdds adds = PullSafety::Count(bot, unit, nearby, botAI);
+            rank = PullSafety::Acceptable(bot, adds) ? 0 : 1 + adds.Total();
+        }
+        if (result && rank > bestRank)
+            continue;
+
         if (group)
         {
             Group::MemberSlotList const& groupSlot = group->GetMemberSlots();
@@ -130,20 +146,22 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
                     continue;
 
                 float d = member->GetDistance(unit);
-                if (!result || d < distance)
+                if (!result || rank < bestRank || d < distance)
                 {
                     distance = d;
                     result = unit;
+                    bestRank = rank;
                 }
             }
         }
         else
         {
             float newdistance = bot->GetDistance(unit);
-            if (!result || (newdistance < distance))
+            if (!result || rank < bestRank || (newdistance < distance))
             {
                 distance = newdistance;
                 result = unit;
+                bestRank = rank;
             }
         }
     }

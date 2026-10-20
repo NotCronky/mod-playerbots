@@ -1430,6 +1430,22 @@ Playerbots.RestrictedHealerDPSMaps = "33,34,36,43,47,48,70,90,109,129,209,229,23
 # Default: 1 (enabled)
 Playerbots.EnableNewRpgStrategy = 1
 
+# Guide strategy: a self-bot plays RestedXP's leveling guides ("guide start" whispered to yourself once self-bot
+# is on; "guide stop", "guide skip", "guide" for the status). Only for self-bots: other bots never get it.
+# The route file, written for the realm by mod-progressive's tools/guide_data.py. Read once at startup.
+# Its decisions (each new task, with the target and whether a whole path leads there) are logged at debug level
+# under playerbots.guide, falling back to the playerbots logger; for a file of their own, in worldserver.conf:
+#   Appender.Guide=2,5,0,Guide.log,w
+#   Logger.playerbots.guide=5,Guide
+# Default: "" (off)
+Playerbots.Guide.DataFile = ""
+
+# Safe pulls: bots grinding pick a mob that brings nothing along (no pack mates within 10 yards, no other
+# aggressive mob whose aggro range covers the fight or the walk to it); tanks take one pack at a time. When every
+# mob around would bring something, the fewest. Costs a scan of the nearby mobs per candidate.
+# Default: 0 (off: the nearest mob)
+Playerbots.SafePull = 0
+
 # Control probability weights for RPG status of bots. Takes effect only when the status meets its premise.​
 # Sum of weights need not be 100. Set to 0 to disable the status.
 #

@@ -14,6 +14,7 @@
 #include "Event.h"
 #include "ForceRebuff.h"
 #include "Item.h"
+#include "GuideInfo.h"
 #include "NewRpgInfo.h"
 #include "NewRpgStrategy.h"
 #include "ObjectGuid.h"
@@ -620,6 +621,7 @@ public:
     static bool IsHealingSpell(uint32 spellFamilyName, flag96 spellFamilyFlags);
     static SpellFamilyNames Class2SpellFamilyName(uint8 cls);
     NewRpgInfo rpgInfo;
+    GuideInfo guideInfo;  // the guide strategy (self-bot only)
     NewRpgStatistic rpgStatistic;
     std::unordered_set<uint32> lowPriorityQuest;
     time_t bgReleaseAttemptTime = 0;
