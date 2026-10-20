@@ -338,6 +338,7 @@ void GuideMgr::Load(std::string const& path)
     ResolveLabels();
     LoadQuestRelations();
     LoadUses();
+    LoadItemDroppers();
     LoadSpawns();
     LoadCreatureIndexes();
     LOG_INFO("server.loading", ">> Loaded {} guides ({} steps, {} skipped) for the guide strategy in {} ms",
@@ -357,6 +358,10 @@ void GuideMgr::LoadQuestRelations()
     reverse(sObjectMgr->GetCreatureQuestInvolvedRelationMap(), _questEnders);
     reverse(sObjectMgr->GetGOQuestRelationMap(), _questStarterObjects);
     reverse(sObjectMgr->GetGOQuestInvolvedRelationMap(), _questEnderObjects);
+    _questStarterItems.clear();
+    for (auto const& [entry, item] : *sObjectMgr->GetItemTemplateStore())
+        if (item.StartQuest)
+            _questStarterItems[item.StartQuest].push_back(entry);
 
     // ObjectMgr only looks these up by trigger
     _questTriggers.clear();
@@ -559,12 +564,26 @@ void GuideMgr::LoadSpawns()
                 else if (element.type == GuideElementType::Complete)
                 {
                     if (Quest const* quest = sObjectMgr->GetQuestTemplate(element.id))
+                    {
                         for (int32 objective : quest->RequiredNpcOrGo)
                             if (objective > 0)
                                 entries.insert(static_cast<uint32>(objective));
                             else if (objective < 0 && !_objectSpawns.count(static_cast<uint32>(-objective)))
                                 objects.insert(static_cast<uint32>(-objective));
+                        for (uint32 item : quest->RequiredItemId)
+                            add(GetItemDroppers(item));
+                    }
                 }
+                else if (element.type == GuideElementType::Collect)
+                {
+                    add(GetItemDroppers(element.id));
+                    add(GetItemVendors(element.id));
+                }
+                if (element.type == GuideElementType::Accept || element.type == GuideElementType::TurnIn)
+                    for (uint32 object : element.type == GuideElementType::Accept ? GetQuestStarterObjects(element.id)
+                                                                                  : GetQuestEnderObjects(element.id))
+                        if (!_objectSpawns.count(object))
+                            objects.insert(object);
             }
 
     _spawns.clear();
@@ -607,6 +626,77 @@ std::vector<float> GuideMgr::SpawnHeightsNear(uint32 mapId, float x, float y, fl
                     heights.push_back(spawn.z);
         }
     return heights;
+}
+
+void GuideMgr::LoadItemDroppers()
+{
+    // The creatures that drop the route's items (an item objective, a ".collect", a quest's item to take somewhere):
+    // where to look for them when none is in sight
+    std::unordered_set<uint32> items;
+    for (auto const& [name, guide] : _guides)
+        for (GuideStep const& step : guide.steps)
+            for (GuideElement const& element : step.elements)
+            {
+                if (element.type == GuideElementType::Collect)
+                    items.insert(element.id);
+                else if (element.type == GuideElementType::Complete || element.type == GuideElementType::Accept)
+                    if (Quest const* quest = sObjectMgr->GetQuestTemplate(element.id))
+                    {
+                        for (uint32 item : quest->RequiredItemId)
+                            if (item)
+                                items.insert(item);
+                        for (uint32 item : quest->ItemDrop)
+                            if (item)
+                                items.insert(item);
+                    }
+            }
+
+    // A drop counts when it's worth killing for: a quest drop, 5% or more, or a share of a loot group
+    _itemDroppers.clear();
+    std::unordered_map<uint32, std::vector<uint32>> lootDrops;  // loot id -> the route's items in it
+    if (QueryResult result =
+            WorldDatabase.Query("SELECT Entry, Item FROM creature_loot_template WHERE Reference = 0 AND "
+                                "(QuestRequired = 1 OR Chance >= 5 OR (Chance = 0 AND GroupId > 0))"))
+        do
+        {
+            Field* fields = result->Fetch();
+            if (items.count(fields[1].Get<uint32>()))
+                lootDrops[fields[0].Get<uint32>()].push_back(fields[1].Get<uint32>());
+        } while (result->NextRow());
+    for (auto const& [entry, creature] : *sObjectMgr->GetCreatureTemplates())
+        if (auto drops = lootDrops.find(creature.lootid); creature.lootid && drops != lootDrops.end())
+            for (uint32 item : drops->second)
+                _itemDroppers[item].push_back(entry);
+
+    // And the vendors that sell them (RestedXP's ".collect" often means buying: a weapon, food, Simple Wood)
+    _itemVendors.clear();
+    if (QueryResult result = WorldDatabase.Query("SELECT entry, item FROM npc_vendor WHERE item > 0"))
+        do
+        {
+            Field* fields = result->Fetch();
+            if (items.count(fields[1].Get<uint32>()))
+                _itemVendors[fields[1].Get<uint32>()].push_back(fields[0].Get<uint32>());
+        } while (result->NextRow());
+}
+
+std::vector<uint32> const& GuideMgr::GetItemVendors(uint32 item) const
+{
+    auto it = _itemVendors.find(item);
+    return it != _itemVendors.end() ? it->second : NONE;
+}
+
+std::vector<uint32> const& GuideMgr::GetItemDroppers(uint32 item) const
+{
+    auto it = _itemDroppers.find(item);
+    return it != _itemDroppers.end() ? it->second : NONE;
+}
+
+std::vector<Guide const*> GuideMgr::GetGuides() const
+{
+    std::vector<Guide const*> guides;
+    for (auto const& [name, guide] : _guides)
+        guides.push_back(&guide);
+    return guides;
 }
 
 void GuideMgr::LoadCreatureIndexes()
@@ -724,6 +814,12 @@ std::vector<uint32> const& GuideMgr::GetQuestEnderObjects(uint32 questId) const
 {
     auto it = _questEnderObjects.find(questId);
     return it != _questEnderObjects.end() ? it->second : NONE;
+}
+
+std::vector<uint32> const& GuideMgr::GetQuestStarterItems(uint32 questId) const
+{
+    auto it = _questStarterItems.find(questId);
+    return it != _questStarterItems.end() ? it->second : NONE;
 }
 
 std::vector<uint32> const& GuideMgr::GetQuestTriggers(uint32 questId) const

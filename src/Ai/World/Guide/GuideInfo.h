@@ -108,7 +108,9 @@ struct GuideInfo
     uint32 lootOpenSince{0};     // a loot window open since (closed if left open)
     bool passStep{false};        // the step can't be done (a full quest log with nothing to drop): move on
     std::vector<WorldPosition> serviceSearched;  // this step's NPC spawns already walked to and found empty
-    ObjectGuid lootWait;                         // the corpse being waited on, since when, and those given up on
+    uint32 skippedWork{0};  // this step's quest work given up, by element index (an item the character can't get)
+    std::map<uint32, uint32> retake;  // failed escorts abandoned to take again, and how often (this step)
+    ObjectGuid lootWait;              // the corpse being waited on, since when, and those given up on
     uint32 lootWaitSince{0};
     std::set<ObjectGuid> lootGivenUp;
     // A use at low health, for the combat side: the item, its spell, the health mark and the creatures it's for.

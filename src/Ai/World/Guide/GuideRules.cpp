@@ -15,7 +15,10 @@
 #include "Player.h"
 #include "ReputationMgr.h"
 #include "SpellAuras.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
 #include "StringFormat.h"
+#include "Trainer.h"
 
 namespace
 {
@@ -241,11 +244,16 @@ bool GuideRules::ElementDone(Player* bot, GuideElement const& element)
     }
 }
 
-bool GuideRules::QuestWorkDone(Player* bot, GuideStep const& step)
+bool GuideRules::QuestWorkDone(Player* bot, GuideStep const& step, uint32 skipped)
 {
-    for (GuideElement const& element : step.elements)
+    for (uint32 i = 0; i < step.elements.size(); ++i)
+    {
+        GuideElement const& element = step.elements[i];
+        if (i < 32 && (skipped & (1u << i)))
+            continue;
         if (element.IsQuestWork() && Applies(bot, element) && !ElementDone(bot, element))
             return false;
+    }
     return true;
 }
 
@@ -353,6 +361,57 @@ bool GuideRules::ObjectiveDone(Player* bot, Quest const* quest, GuideObjective c
     return true;
 }
 
+bool GuideRules::Serves(Player* bot, GuideElement const& element, uint32 creatureEntry)
+{
+    CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(creatureEntry);
+    if (!creature)
+        return false;
+    switch (element.type)
+    {
+        case GuideElementType::Vendor:
+            return creature->npcflag & UNIT_NPC_FLAG_VENDOR;
+        case GuideElementType::Home:
+            return creature->npcflag & UNIT_NPC_FLAG_INNKEEPER;
+        case GuideElementType::FlightPath:
+        case GuideElementType::Fly:
+            return creature->npcflag & UNIT_NPC_FLAG_FLIGHTMASTER;
+        case GuideElementType::Train:
+        case GuideElementType::Trainer:
+        {
+            Trainer::Trainer* trainer = sObjectMgr->GetTrainer(creatureEntry);
+            return (creature->npcflag & UNIT_NPC_FLAG_TRAINER) && trainer && trainer->IsTrainerValidForPlayer(bot) &&
+                   (element.type != GuideElementType::Train || TrainerSpellFor(trainer, element.id));
+        }
+        default:
+            return false;
+    }
+}
+
+bool GuideRules::AtAuctionHouse(Player* bot, GuideStep const& step)
+{
+    for (GuideElement const& element : step.elements)
+        if (element.type == GuideElementType::Target && Applies(bot, element))
+            for (uint32 entry : element.entries)
+                if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry))
+                    if (creature->npcflag & UNIT_NPC_FLAG_AUCTIONEER)
+                        return true;
+    return false;
+}
+
+uint32 GuideRules::TrainerSpellFor(Trainer::Trainer const* trainer, uint32 wanted)
+{
+    for (Trainer::Spell const& spell : trainer->GetSpells())
+    {
+        if (spell.SpellId == wanted)
+            return spell.SpellId;
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(spell.SpellId))
+            for (SpellEffectInfo const& effect : info->Effects)
+                if (effect.Effect == SPELL_EFFECT_LEARN_SPELL && effect.TriggerSpell == wanted)
+                    return spell.SpellId;
+    }
+    return 0;
+}
+
 bool GuideRules::StillNeeded(Player* bot, GuideInfo const& info, uint32 questId)
 {
     // A later step of the route (this guide from the current step, and the next few) works on the quest or hands it in
@@ -447,6 +506,8 @@ bool GuideRules::Advance(Player* bot, GuideInfo& info)
                 info.area = info.reached = info.serviced = info.stuckSince = 0;
                 info.detour = WorldPosition();
                 info.serviceSearched.clear();
+                info.skippedWork = 0;
+                info.retake.clear();
                 info.toldUnfinished = false;
                 return true;
             }

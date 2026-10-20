@@ -161,6 +161,7 @@ public:
     bool IsEnabled() const { return !_guides.empty(); }
 
     Guide const* GetGuide(std::string const& name) const;
+    std::vector<Guide const*> GetGuides() const;
     Guide const* GetStartGuide(Player* player) const;
     Guide const* GetNextGuide(Player* player, Guide const& guide) const;
 
@@ -168,6 +169,7 @@ public:
     std::vector<uint32> const& GetQuestEnders(uint32 questId) const;
     std::vector<uint32> const& GetQuestStarterObjects(uint32 questId) const;  // gameobject entries
     std::vector<uint32> const& GetQuestEnderObjects(uint32 questId) const;
+    std::vector<uint32> const& GetQuestStarterItems(uint32 questId) const;  // items that start it (a deed, a letter)
     std::vector<GuideSpawn> const& GetSpawns(uint32 entry) const;
     // The heights of the route's creature spawns within radius (up to SPAWN_CELL) of x, y: which floor a place is on
     std::vector<float> SpawnHeightsNear(uint32 mapId, float x, float y, float radius) const;
@@ -177,6 +179,8 @@ public:
     std::vector<std::pair<uint32, GuideSpawn>> ServicesNear(uint32 mapId, float x, float y, float radius) const;
     std::vector<uint32> const& GetQuestTriggers(uint32 questId) const;  // area triggers that explore it
     std::vector<uint32> const& GetItemObjects(uint32 item) const;       // objects that hold it (quest items)
+    std::vector<uint32> const& GetItemDroppers(uint32 item) const;      // creatures that drop it (the route's items)
+    std::vector<uint32> const& GetItemVendors(uint32 item) const;       // creatures that sell it (the route's items)
     std::vector<GuideSpawn> const& GetObjectSpawns(uint32 entry) const;
     GuideUse const* GetUse(uint32 item) const;
 
@@ -188,6 +192,7 @@ private:
     void ResolveLabels();
     void LoadUses();
     void LoadCreatureIndexes();
+    void LoadItemDroppers();
     static uint64 SpawnCell(uint32 mapId, float x, float y);
 
     static constexpr float SPAWN_CELL = 50.0f;
@@ -198,8 +203,11 @@ private:
     std::unordered_map<uint32, std::vector<uint32>> _questEnders;
     std::unordered_map<uint32, std::vector<uint32>> _questStarterObjects;
     std::unordered_map<uint32, std::vector<uint32>> _questEnderObjects;
+    std::unordered_map<uint32, std::vector<uint32>> _questStarterItems;
     std::unordered_map<uint32, std::vector<uint32>> _questTriggers;
     std::unordered_map<uint32, std::vector<uint32>> _itemObjects;
+    std::unordered_map<uint32, std::vector<uint32>> _itemDroppers;
+    std::unordered_map<uint32, std::vector<uint32>> _itemVendors;
     std::unordered_map<uint32, std::vector<GuideSpawn>> _objectSpawns;
     std::unordered_map<uint32, std::vector<GuideSpawn>> _spawns;
     std::unordered_map<uint64, std::vector<GuideSpawn>> _spawnCells;

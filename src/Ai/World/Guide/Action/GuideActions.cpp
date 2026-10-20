@@ -15,6 +15,7 @@
 #include "Creature.h"
 #include "DBCStores.h"
 #include "GameObject.h"
+#include "GuideAudit.h"
 #include "GuideMgr.h"
 #include "GuideRules.h"
 #include "ItemPackets.h"
@@ -302,8 +303,13 @@ bool GuideUpdateAction::StepDone(GuideStep const& step)
     if (!questWork && !services)
         return botAI->guideInfo.reached >= Gotos(bot, step, true).size();
 
-    if (!GuideRules::QuestWorkDone(bot, step))
+    if (!GuideRules::QuestWorkDone(bot, step, botAI->guideInfo.skippedWork))
         return false;
+    // A failed escort abandoned to take again: not done while out of the log
+    for (GuideElement const& element : step.elements)
+        if (element.type == GuideElementType::Complete && botAI->guideInfo.retake.count(element.id) &&
+            bot->GetQuestStatus(element.id) == QUEST_STATUS_NONE)
+            return false;
     for (uint32 i = 0; i < step.elements.size(); ++i)
         if (step.elements[i].IsService() && GuideRules::Applies(bot, step.elements[i]) &&
             !ServiceDone(step, step.elements[i], i))
@@ -380,7 +386,21 @@ GuideTask GuideUpdateAction::MakeTask(GuideStep const& step)
                 MakeServiceTask(step, element, i, task);
             return task;
         }
-        if (!element.IsQuestWork() || !GuideRules::Applies(bot, element) || GuideRules::ElementDone(bot, element))
+        // A failed escort abandoned: taken again from its NPC
+        if (element.type == GuideElementType::Complete && botAI->guideInfo.retake.count(element.id) &&
+            GuideRules::Applies(bot, element))
+        {
+            if (bot->GetQuestStatus(element.id) == QUEST_STATUS_NONE)
+            {
+                GuideElement accept;
+                accept.type = GuideElementType::Accept;
+                accept.id = element.id;
+                MakeGiverTask(step, accept, task);
+                return task;
+            }
+        }
+        if (!element.IsQuestWork() || !GuideRules::Applies(bot, element) || GuideRules::ElementDone(bot, element) ||
+            (i < 32 && (botAI->guideInfo.skippedWork & (1u << i))))
             continue;
 
         switch (element.type)
@@ -405,7 +425,7 @@ GuideTask GuideUpdateAction::MakeTask(GuideStep const& step)
                 break;
             case GuideElementType::Collect:
                 if (!UseForObjective(step, task))
-                    MakeCollectTask(step, element, task);
+                    MakeCollectTask(step, element, i, task);
                 break;
             case GuideElementType::Complete:
                 if (!UseForObjective(step, task))
@@ -540,6 +560,16 @@ void GuideUpdateAction::MakeGiverTask(GuideStep const& step, GuideElement const&
     task.questId = element.id;
 
     GuideMgr const& mgr = GuideMgr::instance();
+    // A quest an item starts (a deed, a letter): taken from the item in the bags, as the client does
+    if (accept)
+        for (uint32 entry : mgr.GetQuestStarterItems(element.id))
+            if (Item* item = bot->GetItemByEntry(entry))
+            {
+                task.giver = item->GetGUID();
+                task.interact = true;
+                return;
+            }
+
     WorldObject* giver = nullptr;
     for (uint32 entry : accept ? mgr.GetQuestStarters(element.id) : mgr.GetQuestEnders(element.id))
         if (Creature* creature = bot->FindNearestCreature(entry, GIVER_RANGE))
@@ -567,12 +597,41 @@ void GuideUpdateAction::MakeGiverTask(GuideStep const& step, GuideElement const&
         SpawnPlaces(accept ? mgr.GetQuestStarters(element.id) : mgr.GetQuestEnders(element.id),
                     places.empty() ? places : std::vector<GuideElement const*>{places.front()});
     WorldPosition place = !spawns.empty() ? spawns.front() : !places.empty() ? Place(*places.front()) : WorldPosition();
+    if (place != WorldPosition() && bot->GetExactDist(place) > 5.0f && !spawns.empty())
+    {
+        task.moveTo = place;
+        return;
+    }
+    // Not by the step's places (elsewhere in town, on the tram's map): where it spawns nearest, routed there
+    WorldPosition nearest = NearestSpawn(accept ? mgr.GetQuestStarters(element.id) : mgr.GetQuestEnders(element.id));
+    if (nearest != WorldPosition() && (nearest.GetMapId() != bot->GetMapId() || bot->GetExactDist(nearest) > 5.0f))
+    {
+        task.moveTo = nearest;
+        return;
+    }
     if (place != WorldPosition() && bot->GetExactDist(place) > 5.0f)
     {
         task.moveTo = place;
         return;
     }
     task.wander = true;
+}
+
+WorldPosition GuideUpdateAction::NearestSpawn(std::vector<uint32> const& entries)
+{
+    // On the bot's map first (nearest), else anywhere
+    WorldPosition best;
+    for (uint32 entry : entries)
+        for (GuideSpawn const& spawn : GuideMgr::instance().GetSpawns(entry))
+        {
+            WorldPosition pos(spawn.mapId, spawn.x, spawn.y, spawn.z);
+            bool here = spawn.mapId == bot->GetMapId();
+            bool bestHere = best != WorldPosition() && best.GetMapId() == bot->GetMapId();
+            if (best == WorldPosition() || (here && !bestHere) ||
+                (here && bestHere && bot->GetExactDist(pos) < bot->GetExactDist(best)))
+                best = pos;
+        }
+    return best;
 }
 
 void GuideUpdateAction::MakeServiceTask(GuideStep const& step, GuideElement const& element, uint32 index,
@@ -597,7 +656,7 @@ void GuideUpdateAction::MakeServiceTask(GuideStep const& step, GuideElement cons
         Trainer::Trainer* trainer = sObjectMgr->GetTrainer(creature->GetEntry());
         if (!trainer || !trainer->IsTrainerValidForPlayer(bot))
             return false;
-        return element.type != GuideElementType::Train || trainer->GetSpell(element.id);
+        return element.type != GuideElementType::Train || GuideRules::TrainerSpellFor(trainer, element.id);
     };
 
     // The step's own NPC (".target"), else the nearest that does the job.
@@ -643,28 +702,13 @@ void GuideUpdateAction::MakeServiceTask(GuideStep const& step, GuideElement cons
     for (GuideElement const& other : step.elements)
         if (other.type == GuideElementType::Target && GuideRules::Applies(bot, other))
             targets.insert(targets.end(), other.entries.begin(), other.entries.end());
-    auto suitsTemplate = [&](uint32 entry)
-    {
-        CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry);
-        if (!creature)
-            return false;
-        if (type == GuideElementType::Vendor)
-            return (creature->npcflag & UNIT_NPC_FLAG_VENDOR) != 0;
-        if (type == GuideElementType::Home)
-            return (creature->npcflag & UNIT_NPC_FLAG_INNKEEPER) != 0;
-        if (type == GuideElementType::FlightPath || type == GuideElementType::Fly)
-            return (creature->npcflag & UNIT_NPC_FLAG_FLIGHTMASTER) != 0;
-        Trainer::Trainer* trainer = sObjectMgr->GetTrainer(entry);
-        return (creature->npcflag & UNIT_NPC_FLAG_TRAINER) && trainer && trainer->IsTrainerValidForPlayer(bot) &&
-               (type != GuideElementType::Train || trainer->GetSpell(element.id));
-    };
     WorldPosition best;
     bool bestTarget = false;
     for (auto const& [entry, spawn] : GuideMgr::instance().ServicesNear(around.GetMapId(), around.GetPositionX(),
                                                                         around.GetPositionY(), SERVICE_RANGE))
     {
         WorldPosition pos(spawn.mapId, spawn.x, spawn.y, spawn.z);
-        if (pos.GetMapId() != bot->GetMapId() || !suitsTemplate(entry))
+        if (pos.GetMapId() != bot->GetMapId() || !GuideRules::Serves(bot, element, entry))
             continue;
         if (bot->GetExactDist(pos) <= 5.0f)
         {
@@ -715,7 +759,8 @@ void GuideUpdateAction::MakeKillTask(GuideStep const& step, GuideElement const& 
     if (element.objective && element.objective <= objectives.size())
     {
         GuideObjective const& objective = objectives[element.objective - 1];
-        if (objective.kind == GuideObjective::Kind::Exploration && MakeExploreTask(element.id, task))
+        if (objective.kind == GuideObjective::Kind::Exploration &&
+            (MakeExploreTask(element.id, task) || MakeEscortTask(element.id, task)))
             return;
         if (objective.kind == GuideObjective::Kind::CreatureOrObject && quest->RequiredNpcOrGo[objective.slot] > 0)
             task.entries.push_back(static_cast<uint32>(quest->RequiredNpcOrGo[objective.slot]));
@@ -723,7 +768,13 @@ void GuideUpdateAction::MakeKillTask(GuideStep const& step, GuideElement const& 
             task.objects.push_back(static_cast<uint32>(-quest->RequiredNpcOrGo[objective.slot]));  // to use
         questLoot = objective.kind == GuideObjective::Kind::Item;
         if (questLoot)
-            task.objects = GuideMgr::instance().GetItemObjects(quest->RequiredItemId[objective.slot]);
+        {
+            // Where it comes from: objects holding it, creatures dropping it (their spawns are searched)
+            uint32 item = quest->RequiredItemId[objective.slot];
+            task.objects = GuideMgr::instance().GetItemObjects(item);
+            std::vector<uint32> const& droppers = GuideMgr::instance().GetItemDroppers(item);
+            task.entries.insert(task.entries.end(), droppers.begin(), droppers.end());
+        }
     }
     for (GuideElement const& other : step.elements)
         if (other.type == GuideElementType::Mob && GuideRules::Applies(bot, other))
@@ -1060,6 +1111,60 @@ bool GuideUpdateAction::MakeExploreTask(uint32 questId, GuideTask& task)
     return true;
 }
 
+bool GuideUpdateAction::MakeEscortTask(uint32 questId, GuideTask& task)
+{
+    // A scripted event with no trigger, as an escort: the quest's giver walks off once it's taken. Its attackers
+    // first; else kept near; not in sight: where it spawns (it walks back there after a failed escort). A failed
+    // escort is abandoned and taken again (ESCORT_TRIES), then passed by. False: no giver to escort.
+    GuideInfo& info = botAI->guideInfo;
+    std::vector<uint32> const& givers = GuideMgr::instance().GetQuestStarters(questId);
+    if (givers.empty())
+        return false;
+    if (bot->GetQuestStatus(questId) == QUEST_STATUS_FAILED)
+    {
+        Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
+        uint32& tries = info.retake[questId];
+        if (++tries > ESCORT_TRIES)
+        {
+            LOG_INFO("playerbots.guide", "{}: escort {} failed {} times; leaving it", bot->GetName(), questId,
+                     tries - 1);
+            botAI->TellMasterNoFacing(PlayerbotTextMgr::instance().GetBotTextOrDefault(
+                "guide_escort_failed", "Guide: the escort for %quest keeps failing; leaving it.",
+                {{"%quest", quest ? quest->GetTitle() : std::to_string(questId)}}));
+            info.retake.erase(questId);
+            AbandonQuest(questId);
+            return true;
+        }
+        LOG_INFO("playerbots.guide", "{}: escort {} failed; taking it again (try {})", bot->GetName(), questId, tries);
+        AbandonQuest(questId);
+        return true;
+    }
+
+    Creature* escorted = nullptr;
+    for (uint32 entry : givers)
+        if (Creature* creature = bot->FindNearestCreature(entry, ESCORT_RANGE))
+            if (!escorted || bot->GetExactDist(creature) < bot->GetExactDist(escorted))
+                escorted = creature;
+    if (!escorted)
+    {
+        WorldPosition spawn = NearestSpawn(givers);
+        if (spawn != WorldPosition() && (spawn.GetMapId() != bot->GetMapId() || bot->GetExactDist(spawn) > 10.0f))
+            task.moveTo = spawn;
+        else
+            task.wander = true;
+        return true;
+    }
+    for (Unit* attacker : escorted->getAttackers())
+        if (attacker->IsAlive() && bot->IsValidAttackTarget(attacker))
+        {
+            task.target = attacker->GetGUID();
+            return true;
+        }
+    if (bot->GetExactDist(escorted) > ESCORT_FOLLOW)
+        task.moveTo = WorldPosition(escorted);
+    return true;
+}
+
 bool GuideUpdateAction::UseForObjective(GuideStep const& step, GuideTask& task)
 {
     // The step's ".use" item is how its objective is done: use it rather than (only) kill.
@@ -1266,18 +1371,63 @@ bool GuideUpdateAction::MakeUseTask(GuideStep const& step, GuideElement const& e
     return true;
 }
 
-void GuideUpdateAction::MakeCollectTask(GuideStep const& step, GuideElement const& element, GuideTask& task)
+void GuideUpdateAction::MakeCollectTask(GuideStep const& step, GuideElement const& element, uint32 index,
+                                        GuideTask& task)
 {
-    // Kill the step's creatures until the bags hold enough (a quest drop only drops while on the quest). The item
-    // goes on the always-loot list: the "normal" loot strategy can leave a cooking reagent before the quest is taken.
+    // Until the bags hold enough: bought (from the step's own vendor, or any when nothing drops it), else from what
+    // drops it or holds it and the step's ".mob"s (a quest drop only drops while on the quest). Nothing the bot can get
+    // it from (the auction house, crafting, fishing): passed by. The item goes on the always-loot list: the "normal"
+    // loot strategy can leave a cooking reagent before the quest is taken.
     AI_VALUE(std::set<uint32>&, "always loot list").insert(element.id);
+    if (GuideRules::AtAuctionHouse(bot, step))
+    {
+        // Bought at the auction house: there are no auctions for the bot, so its auctioneer stands in (the items
+        // are given at the auctioneer, "guide service"). No auctioneer to go to: passed by.
+        std::vector<uint32> auctioneers;
+        for (GuideElement const& other : step.elements)
+            if (other.type == GuideElementType::Target && GuideRules::Applies(bot, other))
+                for (uint32 entry : other.entries)
+                    if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry))
+                        if (creature->npcflag & UNIT_NPC_FLAG_AUCTIONEER)
+                            auctioneers.push_back(entry);
+        if (MakeBuyTask(step, index, auctioneers, task))
+            return;
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
+        PassBy(index, proto ? proto->Name1 : std::to_string(element.id), "no auctioneer to get it from");
+        task = GuideTask();
+        return;
+    }
+    GuideMgr const& mgr = GuideMgr::instance();
     task.type = GuideTaskType::Kill;
     task.questId = element.quest;
     task.objective = element.objective;
-    task.objects = GuideMgr::instance().GetItemObjects(element.id);
+    task.objects = mgr.GetItemObjects(element.id);
+    task.entries = mgr.GetItemDroppers(element.id);
     for (GuideElement const& other : step.elements)
         if (other.type == GuideElementType::Mob && GuideRules::Applies(bot, other))
             task.entries.insert(task.entries.end(), other.entries.begin(), other.entries.end());
+
+    std::vector<uint32> const& vendors = mgr.GetItemVendors(element.id);
+    bool stepVendor = false;
+    for (GuideElement const& other : step.elements)
+        if (GuideRules::Applies(bot, other) &&
+            (other.type == GuideElementType::Vendor ||
+             (other.type == GuideElementType::Target &&
+              std::any_of(other.entries.begin(), other.entries.end(), [&](uint32 entry)
+                          { return std::find(vendors.begin(), vendors.end(), entry) != vendors.end(); }))))
+            stepVendor = true;
+    bool dropped = !task.entries.empty() || !task.objects.empty();
+    if (!vendors.empty() && (stepVendor || !dropped) && MakeBuyTask(step, index, vendors, task))
+        return;
+    if (!dropped)
+    {
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
+        PassBy(index, proto ? proto->Name1 : std::to_string(element.id),
+               vendors.empty() ? "nothing drops, holds or sells it here (the auction house, crafting, fishing?)"
+                               : "no vendor selling it near");
+        task = GuideTask();
+        return;
+    }
 
     if (MakeObjectTask(task.objects, task))
         return;
@@ -1288,8 +1438,116 @@ void GuideUpdateAction::MakeCollectTask(GuideStep const& step, GuideElement cons
     }
     bool questLoot = element.quest && bot->GetQuestStatus(element.quest) == QUEST_STATUS_INCOMPLETE;
     task.target = FindKillTarget(task.entries, questLoot);
-    if (task.target.IsEmpty())
-        MakeAreaTask(step, task);
+    if (!task.target.IsEmpty())
+        return;
+    // Nothing that has it in sight, near the step, or within reach (the Elixir of Minor Fortitude's droppers are in
+    // Ahn'Qiraj): passed by
+    std::vector<GuideElement const*> gotos = Gotos(bot, step, false);
+    if (SpawnPlaces(task.entries, gotos, task.objects, AREA_SPAWN_FALLBACK).empty() &&
+        FarSpawn(task.entries, task.objects) == WorldPosition())
+    {
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
+        PassBy(index, proto ? proto->Name1 : std::to_string(element.id), "nothing that drops it is within reach");
+        task = GuideTask();
+        return;
+    }
+    MakeAreaTask(step, task);
+}
+
+WorldPosition GuideUpdateAction::FarSpawn(std::vector<uint32> const& entries, std::vector<uint32> const& objects)
+{
+    // The nearest spawn on the bot's map within FAR_SPAWN, else on another map of the open world (not an instance)
+    WorldPosition best;
+    auto consider = [&](GuideSpawn const& spawn)
+    {
+        WorldPosition pos(spawn.mapId, spawn.x, spawn.y, spawn.z);
+        bool here = spawn.mapId == bot->GetMapId();
+        if (here && bot->GetExactDist(pos) > FAR_SPAWN)
+            return;
+        if (!here)
+        {
+            MapEntry const* map = sMapStore.LookupEntry(spawn.mapId);
+            if (!map || map->Instanceable())
+                return;
+        }
+        bool bestHere = best != WorldPosition() && best.GetMapId() == bot->GetMapId();
+        if (best == WorldPosition() || (here && !bestHere) ||
+            (here && bestHere && bot->GetExactDist(pos) < bot->GetExactDist(best)))
+            best = pos;
+    };
+    for (uint32 entry : entries)
+        for (GuideSpawn const& spawn : GuideMgr::instance().GetSpawns(entry))
+            consider(spawn);
+    for (uint32 entry : objects)
+        for (GuideSpawn const& spawn : GuideMgr::instance().GetObjectSpawns(entry))
+            consider(spawn);
+    return best;
+}
+
+bool GuideUpdateAction::MakeBuyTask(GuideStep const& step, uint32 index, std::vector<uint32> const& vendors,
+                                    GuideTask& task)
+{
+    // A vendor that sells it: in sight (bought by "guide service"), else where one spawns by the step's places, else
+    // the nearest on this map within BUY_RANGE. False: none.
+    if (index >= 32)
+        return false;  // an earlier step's collect: its own step buys it
+    GuideTask buy;
+    buy.type = GuideTaskType::Service;
+    buy.element = index;
+    Creature* vendor = nullptr;
+    for (uint32 entry : vendors)
+        if (Creature* creature = bot->FindNearestCreature(entry, GIVER_RANGE))
+            if (!vendor || bot->GetExactDist(creature) < bot->GetExactDist(vendor))
+                vendor = creature;
+    if (vendor)
+    {
+        buy.giver = vendor->GetGUID();
+        buy.interact = bot->IsWithinDistInMap(vendor, INTERACTION_DISTANCE);
+        task = buy;
+        return true;
+    }
+
+    GuideInfo& info = botAI->guideInfo;
+    auto searched = [&](WorldPosition const& pos)
+    {
+        return std::any_of(info.serviceSearched.begin(), info.serviceSearched.end(),
+                           [&](WorldPosition const& seen) { return seen.GetExactDist(&pos) <= 5.0f; });
+    };
+    std::vector<WorldPosition> spawns = SpawnPlaces(vendors, Gotos(bot, step, false));
+    if (spawns.empty())
+        for (uint32 entry : vendors)
+            for (GuideSpawn const& spawn : GuideMgr::instance().GetSpawns(entry))
+                if (spawn.mapId == bot->GetMapId() && bot->GetExactDist2d(spawn.x, spawn.y) <= BUY_RANGE)
+                    spawns.emplace_back(spawn.mapId, spawn.x, spawn.y, spawn.z);
+    std::sort(spawns.begin(), spawns.end(), [&](WorldPosition const& a, WorldPosition const& b)
+              { return bot->GetExactDist(a) < bot->GetExactDist(b); });
+    for (WorldPosition const& spawn : spawns)
+    {
+        if (searched(spawn))
+            continue;
+        if (bot->GetExactDist(spawn) <= 5.0f)
+        {
+            info.serviceSearched.push_back(spawn);  // there, and nobody: not again
+            continue;
+        }
+        buy.moveTo = spawn;
+        task = buy;
+        return true;
+    }
+    return false;
+}
+
+void GuideUpdateAction::PassBy(uint32 index, std::string const& what, std::string const& why)
+{
+    // The step's element given up (once): the rest of the step goes on
+    GuideInfo& info = botAI->guideInfo;
+    if (index >= 32 || (info.skippedWork & (1u << index)))
+        return;
+    info.skippedWork |= 1u << index;
+    LOG_INFO("playerbots.guide", "{}: passes by {} on {} step {}: {}", bot->GetName(), what, info.guide->name,
+             info.guide->steps[info.step].number, why);
+    botAI->TellMasterNoFacing(PlayerbotTextMgr::instance().GetBotTextOrDefault(
+        "guide_passed_by", "Guide: I can't get %what (%why); passing it by.", {{"%what", what}, {"%why", why}}));
 }
 
 bool GuideUpdateAction::FinishQuestTask(uint32 questId, GuideTask& task)
@@ -1314,7 +1572,7 @@ bool GuideUpdateAction::FinishQuestTask(uint32 questId, GuideTask& task)
             if (element.type == GuideElementType::Collect && element.quest == questId)
             {
                 if (!UseForObjective(step, task))
-                    MakeCollectTask(step, element, task);
+                    MakeCollectTask(step, element, 32, task);
                 return true;
             }
         }
@@ -1337,6 +1595,18 @@ void GuideUpdateAction::MakeAreaTask(GuideStep const& step, GuideTask& task)
     // only one, look around it.
     std::vector<GuideElement const*> gotos = Gotos(bot, step, false);
     std::vector<WorldPosition> places = SpawnPlaces(task.entries, gotos, task.objects);
+    if (places.empty() && !gotos.empty())
+        places = SpawnPlaces(task.entries, gotos, task.objects, AREA_SPAWN_FALLBACK);
+    if (places.empty())
+        if (WorldPosition far = FarSpawn(task.entries, task.objects); far != WorldPosition())
+        {
+            // Nowhere near the step's waypoints (the tram's rats, on the tram's own map): the nearest, routed
+            if (far.GetMapId() != bot->GetMapId() || bot->GetExactDist(far) > AREA_REACHED)
+            {
+                task.moveTo = far;
+                return;
+            }
+        }
     if (places.empty())
         for (GuideElement const* element : gotos)
             places.push_back(Place(*element));
@@ -1364,7 +1634,7 @@ void GuideUpdateAction::MakeAreaTask(GuideStep const& step, GuideTask& task)
 
 std::vector<WorldPosition> GuideUpdateAction::SpawnPlaces(std::vector<uint32> const& entries,
                                                           std::vector<GuideElement const*> const& gotos,
-                                                          std::vector<uint32> const& objects)
+                                                          std::vector<uint32> const& objects, float radius)
 {
     // The spawns near the step's waypoints (or near the bot without any), nearest the first waypoint first, one per
     // few yards. Real positions, heights included: the waypoints have none, and the ground there can be the hill
@@ -1375,10 +1645,9 @@ std::vector<WorldPosition> GuideUpdateAction::SpawnPlaces(std::vector<uint32> co
         if (spawn.mapId != bot->GetMapId())
             return false;
         if (gotos.empty())
-            return bot->GetExactDist2d(spawn.x, spawn.y) <= AREA_SPAWN_RADIUS;
+            return bot->GetExactDist2d(spawn.x, spawn.y) <= radius;
         for (GuideElement const* element : gotos)
-            if (element->mapId == spawn.mapId &&
-                std::hypot(element->x - spawn.x, element->y - spawn.y) <= AREA_SPAWN_RADIUS)
+            if (element->mapId == spawn.mapId && std::hypot(element->x - spawn.x, element->y - spawn.y) <= radius)
                 return true;
         return false;
     };
@@ -2174,6 +2443,10 @@ bool GuideServiceAction::Execute(Event /*event*/)
         SellJunk(npc);
         BuySupplies(npc);
     }
+    else if (element.type == GuideElementType::Collect && npc->IsAuctioner())
+        AuctionItem(element, task.element);
+    else if (element.type == GuideElementType::Collect)
+        BuyItem(npc, element, task.element);
     else if (element.type == GuideElementType::Home)
         bot->GetSession()->SendBindPoint(npc);
     else if (element.type == GuideElementType::FlightPath)
@@ -2190,10 +2463,11 @@ bool GuideServiceAction::Execute(Event /*event*/)
     }
     else if (Trainer::Trainer* trainer = sObjectMgr->GetTrainer(npc->GetEntry()))
     {
-        // Twice: a rank learned now opens the next one.
+        // Twice: a rank learned now opens the next one. ".train": the trainer's spell that gives it.
+        uint32 wanted = element.type == GuideElementType::Train ? GuideRules::TrainerSpellFor(trainer, element.id) : 0;
         for (uint32 pass = 0; pass < 2; ++pass)
             for (Trainer::Spell const& spell : trainer->GetSpells())
-                if ((element.type != GuideElementType::Train || spell.SpellId == element.id) &&
+                if ((element.type != GuideElementType::Train || spell.SpellId == wanted) &&
                     trainer->CanTeachSpell(bot, &spell))
                     trainer->TeachSpell(npc, bot, spell.SpellId);
     }
@@ -2203,6 +2477,59 @@ bool GuideServiceAction::Execute(Event /*event*/)
     info.lastUpdate = 0;
     ForceToWait(1000);
     return true;
+}
+
+void GuideServiceAction::AuctionItem(GuideElement const& element, uint32 index)
+{
+    // An auction-house ".collect" (cooking ingredients, a sharpening stone): what's missing, given at the auctioneer
+    GuideInfo& info = botAI->guideInfo;
+    ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
+    uint32 have = bot->GetItemCount(element.id, true);
+    if (!proto || have >= element.count)
+        return;
+    bot->AddItem(element.id, element.count - have);
+    LOG_INFO("playerbots.guide", "{}: gets {} x{} at the auction house", bot->GetName(), proto->Name1,
+             element.count - have);
+    if (bot->GetItemCount(element.id, true) >= element.count || index >= 32)
+        return;
+    info.skippedWork |= 1u << index;  // no room in the bags
+    botAI->TellMasterNoFacing(PlayerbotTextMgr::instance().GetBotTextOrDefault(
+        "guide_cant_buy", "Guide: I couldn't buy %item (not enough money, or no room); passing it by.",
+        {{"%item", proto->Name1}}));
+}
+
+void GuideServiceAction::BuyItem(Creature* vendor, GuideElement const& element, uint32 index)
+{
+    // A ".collect" item the vendor sells: what's missing, as far as the money goes. Still short: given up, and said.
+    GuideInfo& info = botAI->guideInfo;
+    ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
+    VendorItemData const* items = vendor->GetVendorItems();
+    if (!proto || !items)
+        return;
+    uint32 have = bot->GetItemCount(element.id, true);
+    for (uint32 slot = 0; slot < items->GetItemCount() && have < element.count; ++slot)
+    {
+        VendorItem const* sold = items->GetItem(slot);
+        if (!sold || sold->item != element.id || sold->ExtendedCost)
+            continue;
+        uint32 perBuy = std::max<uint32>(proto->BuyCount, 1);
+        uint32 buys = (element.count - have + perBuy - 1) / perBuy;
+        uint32 price = uint32(std::floor(proto->BuyPrice * bot->GetReputationPriceDiscount(vendor)));
+        if (price)
+            buys = std::min<uint32>(buys, bot->GetMoney() / price);
+        buys = std::min<uint32>(buys, 255);
+        if (buys)
+            bot->BuyItemFromVendorSlot(vendor->GetGUID(), slot, element.id, uint8(buys), NULL_BAG, NULL_SLOT);
+        LOG_DEBUG("playerbots.guide", "{}: bought {} x{}", bot->GetName(), proto->Name1, buys * perBuy);
+        have = bot->GetItemCount(element.id, true);
+    }
+    if (have >= element.count || index >= 32 || (info.skippedWork & (1u << index)))
+        return;
+    info.skippedWork |= 1u << index;
+    LOG_INFO("playerbots.guide", "{}: couldn't buy {} ({} of {})", bot->GetName(), proto->Name1, have, element.count);
+    botAI->TellMasterNoFacing(PlayerbotTextMgr::instance().GetBotTextOrDefault(
+        "guide_cant_buy", "Guide: I couldn't buy %item (not enough money, or no room); passing it by.",
+        {{"%item", proto->Name1}}));
 }
 
 void GuideServiceAction::SellJunk(Creature* vendor)
@@ -2710,6 +3037,54 @@ bool GuideCommandAction::Execute(Event event)
         botAI->TellMasterNoFacing(text.GetBotTextOrDefault("guide_stopped", "Guide: stopped.", {}));
         return true;
     }
+    // "guide audit [all | <guide>]": the route (or every guide, or one) checked against the realm's data for this
+    // character; findings in the guide log, the counts here
+    if (param == "audit" || param.rfind("audit ", 0) == 0)
+    {
+        std::string which = param.size() > 6 ? param.substr(6) : "";
+        std::vector<Guide const*> guides;
+        if (which == "all")
+        {
+            for (Guide const* guide : GuideMgr::instance().GetGuides())
+                if (guide->condition.Holds(bot))
+                    guides.push_back(guide);
+        }
+        else if (!which.empty())
+        {
+            if (Guide const* guide = GuideMgr::instance().GetGuide(which))
+                guides.push_back(guide);
+        }
+        else
+        {
+            std::set<Guide const*> seen;
+            for (Guide const* guide = GuideMgr::instance().GetStartGuide(bot); guide && seen.insert(guide).second;
+                 guide = GuideMgr::instance().GetNextGuide(bot, *guide))
+                guides.push_back(guide);
+        }
+        if (guides.empty())
+        {
+            botAI->TellMasterNoFacing(text.GetBotTextOrDefault(
+                "guide_unknown", "Guide: no guide called %name for your character.", {{"%name", which}}));
+            return false;
+        }
+
+        GuideAudit::Summary summary = GuideAudit::Run(bot, guides);
+        std::vector<std::pair<uint32, std::string>> kinds;
+        for (auto const& [kind, count] : summary.byKind)
+            kinds.emplace_back(count, kind);
+        std::sort(kinds.rbegin(), kinds.rend());
+        std::string top;
+        for (size_t i = 0; i < kinds.size() && i < 8; ++i)
+            top += Acore::StringFormat("{}{} {}", top.empty() ? "" : ", ", kinds[i].first, kinds[i].second);
+        LOG_INFO("playerbots.guide", "AUDIT {}: {} guides, {} steps, {} findings", bot->GetName(), summary.guides,
+                 summary.steps, summary.findings);
+        for (auto const& [count, kind] : kinds)
+            LOG_INFO("playerbots.guide", "AUDIT {}:   {} x {}", bot->GetName(), count, kind);
+        botAI->TellMasterNoFacing(
+            Acore::StringFormat("Guide audit: {} guides, {} steps, {} findings{}{}. Details in Guide.log.",
+                                summary.guides, summary.steps, summary.findings, top.empty() ? "" : ": ", top));
+        return true;
+    }
     if (param == "skip" && info.guide)
     {
         if (!GuideRules::Advance(bot, info))
@@ -2721,6 +3096,6 @@ bool GuideCommandAction::Execute(Event event)
 
     botAI->TellMasterNoFacing(
         "Guide: " + (info.active ? GuideRules::Describe(bot, info) : std::string("off")) +
-        ". Commands: guide start [guide], guide resume, guide go <place>, guide stop, guide skip.");
+        ". Commands: guide start [guide], guide resume, guide go <place>, guide stop, guide skip, guide audit [all].");
     return true;
 }

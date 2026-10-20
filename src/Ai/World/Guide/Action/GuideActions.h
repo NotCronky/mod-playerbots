@@ -39,6 +39,8 @@ private:
     static constexpr float AREA_REACHED = 20.0f;
     static constexpr float AREA_SPAWN_RADIUS = 80.0f;  // spawns this near a step's waypoint belong to it
     static constexpr float AREA_SPAWN_SPACING = 15.0f;
+    static constexpr float AREA_SPAWN_FALLBACK = 400.0f;  // none that near the step's waypoints: this near
+    static constexpr float FAR_SPAWN = 1500.0f;  // then the nearest on the bot's map this near, or another world map
     // A place with no whole path to it (in a cave, from the hill above it) is reached by way of the step's places
     // this near it first (the cave's entrance)
     static constexpr float ENTRANCE_RANGE = 100.0f;
@@ -76,6 +78,10 @@ private:
     static constexpr uint32 MIN_FREE_SLOTS = 2;                 // fewer free bag slots: the cheapest junk goes
     static constexpr uint32 STALE_LOOT = 10 * IN_MILLISECONDS;  // a loot window open this long is closed
     static constexpr float SERVICE_RANGE = 150.0f;  // an NPC to train, sell, bind or fly with: its spawn this near
+    static constexpr float ESCORT_RANGE = 80.0f;    // the escorted NPC looked for this near
+    static constexpr float ESCORT_FOLLOW = 6.0f;    // and kept this near
+    static constexpr uint32 ESCORT_TRIES = 3;       // a failed escort taken again this often
+    static constexpr float BUY_RANGE = 500.0f;  // a vendor selling a ".collect" item, by none near the step: this near
     // A fight starts only with this much health and mana (percent); below, the bot eats and drinks first.
     static constexpr float READY_HEALTH = 60.0f;
     static constexpr float READY_MANA = 40.0f;
@@ -98,6 +104,7 @@ private:
     void MakeServiceTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
     void MakeKillTask(GuideStep const& step, GuideElement const& element, GuideTask& task);
     bool MakeExploreTask(uint32 questId, GuideTask& task);
+    bool MakeEscortTask(uint32 questId, GuideTask& task);
     bool HasWholePath(WorldPosition const& to, bool* enemy = nullptr);
     void AbandonQuest(uint32 questId);
     bool MakeRoom(uint32 questId);
@@ -110,7 +117,10 @@ private:
     bool CheckTargetStuck(GuideInfo& info, WorldPosition const& target);
     void ApplyDetour(GuideInfo& info);
     void LogTask(GuideInfo& info);
-    void MakeCollectTask(GuideStep const& step, GuideElement const& element, GuideTask& task);
+    // index: the element's in the current step (32: an earlier step's, not to be given up from here)
+    void MakeCollectTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
+    bool MakeBuyTask(GuideStep const& step, uint32 index, std::vector<uint32> const& vendors, GuideTask& task);
+    void PassBy(uint32 index, std::string const& what, std::string const& why);
     bool UseForObjective(GuideStep const& step, GuideTask& task);
     bool MakeUseTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
     bool FinishQuestTask(uint32 questId, GuideTask& task);
@@ -119,7 +129,9 @@ private:
     WorldPosition Place(GuideElement const& element);
     std::vector<WorldPosition> SpawnPlaces(std::vector<uint32> const& entries,
                                            std::vector<GuideElement const*> const& gotos,
-                                           std::vector<uint32> const& objects = {});
+                                           std::vector<uint32> const& objects = {}, float radius = AREA_SPAWN_RADIUS);
+    WorldPosition NearestSpawn(std::vector<uint32> const& entries);
+    WorldPosition FarSpawn(std::vector<uint32> const& entries, std::vector<uint32> const& objects);
     bool MakeObjectTask(std::vector<uint32> const& objects, GuideTask& task);
     ObjectGuid FindKillTarget(std::vector<uint32> const& entries, bool questLoot, float range = KILL_RANGE);
     Unit* FindKillCandidate(std::vector<uint32> const& entries, bool questLoot, float range);
@@ -172,6 +184,8 @@ private:
     static constexpr uint32 AMMO_STOCK = 600;
 
     void SellJunk(Creature* vendor);
+    void BuyItem(Creature* vendor, GuideElement const& element, uint32 index);
+    void AuctionItem(GuideElement const& element, uint32 index);
     void BuySupplies(Creature* vendor);
 };
 
