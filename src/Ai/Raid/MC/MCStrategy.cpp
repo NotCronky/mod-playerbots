@@ -151,7 +151,7 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
                 exclusions.insert(guid);
             else
                 fireswornAlive = true;
-            if (type == TargetValueExclusionType::Dps && PlayerbotAI::IsMelee(botAI->GetBot()) &&
+            if (type == TargetValueExclusionType::DpsTarget && PlayerbotAI::IsMelee(botAI->GetBot()) &&
                 !PlayerbotAI::IsTank(botAI->GetBot()) && unit->GetHealthPct() <= FIRESWORN_ERUPTION_HEALTH_PCT)
                 exclusions.insert(guid);
         }
@@ -163,7 +163,7 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
         // Damage Shield. Melee also leave an add standing in his lava pit until a tank drags it out. The tanks
         // keep hitting to hold them.
         bool const melee = PlayerbotAI::IsMelee(botAI->GetBot());
-        if (type == TargetValueExclusionType::Dps &&
+        if (type == TargetValueExclusionType::DpsTarget &&
             ((PlayerbotAI::IsCaster(botAI->GetBot()) && unit->HasAura(SPELL_MAGIC_REFLECTION)) ||
              (melee && (unit->HasAura(SPELL_DAMAGE_REFLECTION) || InMajordomoCoals(unit)))))
             exclusions.insert(guid);
@@ -171,6 +171,6 @@ void RaidMcStrategy::AppendTargetExclusions(GuidSet& exclusions, TargetValueExcl
 
     // Garr: the free Firesworn die first, one at a time (each death erupts and gives Garr a Frenzy stack, but loose
     // adds kill the healers); damage dealers leave Garr to the main tank until they are dead. The banished ones wait.
-    if (garr && fireswornAlive && type == TargetValueExclusionType::Dps)
+    if (garr && fireswornAlive && type == TargetValueExclusionType::DpsTarget)
         exclusions.insert(garr->GetGUID());
 }
