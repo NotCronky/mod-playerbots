@@ -6,6 +6,7 @@
 
 #include "BattleGroundTactics.h"
 #include "Chat.h"
+#include "GuideAudit.h"
 #include "GuildTaskMgr.h"
 #include "PerfMonitor.h"
 #include "PlayerbotMgr.h"
@@ -41,11 +42,21 @@ public:
             {"account", playerbotsAccountCommandTable},
         };
 
+        static ChatCommandTable guideCommandTable = {
+            {"audit", HandleGuideAuditCommand, SEC_GAMEMASTER, Console::Yes},
+        };
+
         static ChatCommandTable commandTable = {
             {"playerbots", playerbotsCommandTable},
+            {"guide", guideCommandTable},
         };
 
         return commandTable;
+    }
+
+    static bool HandleGuideAuditCommand(ChatHandler* handler, char const* args)
+    {
+        return GuideAudit::HandleCommand(handler, args ? args : "");
     }
 
     static bool HandlePlayerbotCommand(ChatHandler* handler, char const* args)

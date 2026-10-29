@@ -412,7 +412,8 @@ void PlayerbotAI::UpdateAI(uint32 elapsed, bool minimal)
     else
         nextTransportCheck = 0;
 
-    if (!nextTransportCheck)
+    // (not for a self-bot on the guide: its rides are skipped, and a docked ship it stands by would take it aboard)
+    if (!nextTransportCheck && !(guideInfo.active && IsSelfBot(bot)))
     {
         nextTransportCheck = 1000;
         Transport* newTransport = bot->GetMap()->GetTransportForPos(bot->GetPhaseMask(), bot->GetPositionX(),
@@ -1640,7 +1641,9 @@ void PlayerbotAI::DoNextAction(bool min)
             if (!bot->isMoving() && distance < 10.0f)
                 bot->SetStandState(UNIT_STAND_STATE_SIT);
         }
-        else if (nextAICheckDelay < 1000)
+        // Only when sitting: each call sends the stand state to the bot's client, and a self-bot's is the player's
+        // (six times a second, it broke up the client's movement)
+        else if (nextAICheckDelay < 1000 && bot->IsSitState())
             bot->SetStandState(UNIT_STAND_STATE_STAND);
     }
     else if (bot->m_movementInfo.HasMovementFlag(MOVEMENTFLAG_WALKING))

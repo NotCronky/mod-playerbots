@@ -11,6 +11,7 @@
 
 #include "AttackAction.h"
 #include "GuideInfo.h"
+#include "GuideMgr.h"
 #include "NewRpgBaseAction.h"
 #include "UseItemAction.h"
 
@@ -31,14 +32,19 @@ public:
     static constexpr float RESTED_HEALTH = 90.0f;
     static constexpr float RESTED_MANA = 80.0f;
     static constexpr float OPEN_RANGE = INTERACTION_DISTANCE - 2.0f;  // as near as playerbots' "open loot" needs
+    static constexpr uint32 UNREACHABLE_TIME = 30 * IN_MILLISECONDS;  // a creature with no whole path is left that long
+    static constexpr float REPAIR_DURABILITY = 0.3f;  // an equipped item down to this of its durability: worn down
 
 private:
     static constexpr uint32 UPDATE_INTERVAL = 500;
     static constexpr float GIVER_RANGE = 40.0f;  // yards from the bot to look for the quest giver
-    static constexpr float KILL_RANGE = 60.0f;   // yards from the bot to look for kill targets
+    static constexpr float KILL_RANGE = 80.0f;   // yards from the bot to look for kill targets
     static constexpr float AREA_REACHED = 20.0f;
-    static constexpr float AREA_SPAWN_RADIUS = 80.0f;  // spawns this near a step's waypoint belong to it
+    static constexpr float AREA_SPAWN_RADIUS = 150.0f;  // spawns this near a step's waypoint belong to it
+    // a step without waypoints: those this near where the step began (not the bot: the places would move with it)
+    static constexpr float AREA_ANCHOR_RADIUS = 250.0f;
     static constexpr float AREA_SPAWN_SPACING = 15.0f;
+    static constexpr uint32 AREA_MIN_PLACES = 6;  // a step without waypoints searches at least this many spawn places
     static constexpr float AREA_SPAWN_FALLBACK = 400.0f;  // none that near the step's waypoints: this near
     static constexpr float FAR_SPAWN = 1500.0f;  // then the nearest on the bot's map this near, or another world map
     // A place with no whole path to it (in a cave, from the hill above it) is reached by way of the step's places
@@ -52,14 +58,20 @@ private:
     static constexpr float FLOOR_SEARCH = 150.0f;
     static constexpr float FLOOR_HINT_RANGE = 40.0f;
     static constexpr float FLOOR_HINT_MATCH = 20.0f;
+    // The top floor is looked for from this far over the land (a building's floors lie over it: Stormwind's streets);
+    // with no creatures to say, the floor nearest the bot's own height when it is within FLOOR_BOT_RANGE
+    static constexpr float FLOOR_SKY = 250.0f;
+    static constexpr float FLOOR_BOT_RANGE = 300.0f;
     // Patrols: watched within this range; their path passing within aggro range + margin is too close; the bot
     // steps out to aggro range + clearance from it.
     static constexpr float PATROL_WATCH = 50.0f;
     static constexpr float PATROL_MARGIN = 3.0f;
     static constexpr float PATROL_CLEARANCE = 8.0f;
     static constexpr uint32 PATROL_WAIT = 30 * IN_MILLISECONDS;  // longest wait for it to pass
-    static constexpr float SIDE_RANGE = 30.0f;                   // a side step's kills: only this close to the bot
-    static constexpr float LOOT_RANGE = 25.0f;                   // its own kills this close are looted before moving on
+    static constexpr float PATROL_HEIGHT = 8.0f;  // a patrol this far above or below (a mine's tunnels) isn't avoided
+    static constexpr uint32 PATROL_AGAIN = 2 * MINUTE * IN_MILLISECONDS;  // one waited for isn't avoided again so soon
+    static constexpr float SIDE_RANGE = 30.0f;  // a side step's kills and objects to open: only this close to the bot
+    static constexpr float LOOT_RANGE = 25.0f;  // its own kills this close are looted before moving on
     static constexpr uint32 LOOT_WAIT = 8 * IN_MILLISECONDS;
     static constexpr uint32 NEEDED_LOOT_WAIT = 30 * IN_MILLISECONDS;  // a quest's item: walked to and taken
     // Stuck: no progress on a step for this long; walking this much closer to the goal counts as progress.
@@ -69,18 +81,28 @@ private:
     // step's place by the target, give up)
     static constexpr uint32 TARGET_STUCK_TIME = MINUTE * IN_MILLISECONDS;
     static constexpr float TARGET_GAIN = 5.0f;
-    static constexpr uint32 REACH_RECHECK = 10 * IN_MILLISECONDS;     // a target's whole path is checked again after
-    static constexpr uint32 UNREACHABLE_TIME = 30 * IN_MILLISECONDS;  // a creature with no whole path is left that long
-    static constexpr uint32 KILL_PATH_CHECKS = 3;                     // creatures checked for a whole path per update
+    static constexpr uint32 REACH_RECHECK = 10 * IN_MILLISECONDS;  // a target's whole path is checked again after
+    static constexpr uint32 KILL_PATH_CHECKS = 3;                  // creatures checked for a whole path per update
     // A walk passing the other faction's creatures this near (a camp, a town) is routed round them, unless its target
     // is among them
     static constexpr float ENEMY_RANGE = 35.0f;
     static constexpr uint32 MIN_FREE_SLOTS = 2;                 // fewer free bag slots: the cheapest junk goes
     static constexpr uint32 STALE_LOOT = 10 * IN_MILLISECONDS;  // a loot window open this long is closed
     static constexpr float SERVICE_RANGE = 150.0f;  // an NPC to train, sell, bind or fly with: its spawn this near
-    static constexpr float ESCORT_RANGE = 80.0f;    // the escorted NPC looked for this near
-    static constexpr float ESCORT_FOLLOW = 6.0f;    // and kept this near
-    static constexpr uint32 ESCORT_TRIES = 3;       // a failed escort taken again this often
+    static constexpr float REPAIR_RANGE = 200.0f;   // worn down: a repairer whose spawn is this near
+    static constexpr float VENDOR_RANGE = 60.0f;    // junk in the bags: a vendor in sight this near
+    static constexpr uint32 VENDOR_CHASE = 20 * IN_MILLISECONDS;  // and walked to this long at most
+    // A Lure item: placed within LURE_RANGE of the creature; the trap counted on for LURE_TIME
+    static constexpr float LURE_RANGE = 20.0f;
+    static constexpr uint32 LURE_TIME = 60 * IN_MILLISECONDS;
+    static constexpr uint32 LURE_PLACING = 5 * IN_MILLISECONDS;
+    // A death skip: the graveyard nearest the step's place within DEATHSKIP_GRAVEYARD; not again within DEATHSKIP_DONE
+    static constexpr float DEATHSKIP_GRAVEYARD = 300.0f;
+    static constexpr float DEATHSKIP_DONE = 150.0f;
+    static constexpr float ESCORT_RANGE = 80.0f;  // the escorted NPC looked for this near
+    static constexpr float ESCORT_FOLLOW = 6.0f;  // and kept this near
+    static constexpr uint32 ESCORT_TRIES = 3;     // a failed escort taken again this often
+    static constexpr float LEAD_RANGE = 30.0f;    // a creature to kill following the bot this near is led on
     static constexpr float BUY_RANGE = 500.0f;  // a vendor selling a ".collect" item, by none near the step: this near
     // A fight starts only with this much health and mana (percent); below, the bot eats and drinks first.
     static constexpr float READY_HEALTH = 60.0f;
@@ -102,13 +124,19 @@ private:
     GuideTask MakeTask(GuideStep const& step);
     void MakeGiverTask(GuideStep const& step, GuideElement const& element, GuideTask& task);
     void MakeServiceTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
-    void MakeKillTask(GuideStep const& step, GuideElement const& element, GuideTask& task);
+    bool MakeRepairTask(GuideTask& task);
+    bool MakeVendorTask(GuideTask& task);
+    bool DeathSkip(GuideStep const& step);
+    bool MakeGossipCreditTask(uint32 questId, GuideTask& task);
+    bool MakeEmoteTask(uint32 questId, GuideTask& task);
+    void MakeKillTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
     bool MakeExploreTask(uint32 questId, GuideTask& task);
     bool MakeEscortTask(uint32 questId, GuideTask& task);
+    bool MakeLeadTask(GuideStep const& step, GuideTask& task);
     bool HasWholePath(WorldPosition const& to, bool* enemy = nullptr);
     void AbandonQuest(uint32 questId);
     bool MakeRoom(uint32 questId);
-    void FreeBagSpace();
+    void FreeBagSpace(bool full = false);
     void CloseStaleLoot(GuideInfo& info);
     bool Reachable(GuideInfo& info, WorldPosition const& target);
     WorldPosition StepEntrance(GuideInfo& info, WorldPosition const& target);
@@ -122,6 +150,8 @@ private:
     bool MakeBuyTask(GuideStep const& step, uint32 index, std::vector<uint32> const& vendors, GuideTask& task);
     void PassBy(uint32 index, std::string const& what, std::string const& why);
     bool UseForObjective(GuideStep const& step, GuideTask& task);
+    bool MakeLureTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideUse const& use,
+                      GuideTask& task);
     bool MakeUseTask(GuideStep const& step, GuideElement const& element, uint32 index, GuideTask& task);
     bool FinishQuestTask(uint32 questId, GuideTask& task);
     void MakeAreaTask(GuideStep const& step, GuideTask& task);
@@ -132,13 +162,15 @@ private:
                                            std::vector<uint32> const& objects = {}, float radius = AREA_SPAWN_RADIUS);
     WorldPosition NearestSpawn(std::vector<uint32> const& entries);
     WorldPosition FarSpawn(std::vector<uint32> const& entries, std::vector<uint32> const& objects);
-    bool MakeObjectTask(std::vector<uint32> const& objects, GuideTask& task);
+    bool MakeObjectTask(std::vector<uint32> const& objects, GuideTask& task, float range = KILL_RANGE);
     ObjectGuid FindKillTarget(std::vector<uint32> const& entries, bool questLoot, float range = KILL_RANGE);
     Unit* FindKillCandidate(std::vector<uint32> const& entries, bool questLoot, float range);
     void SideWork(GuideInfo& info);
     void WaitForLoot(GuideInfo& info);
     bool HasLootFor(Creature* corpse);
+    uint32 LootLeft(Creature* corpse);
     std::vector<uint8> NeededLootSlots(Creature* corpse);
+    void TakeNeededLoot(Creature* corpse, std::vector<uint8> const& slots);
     bool CheckStuck(GuideInfo& info);
     bool ReadyToFight();
     void AvoidPatrols(GuideInfo& info);
@@ -184,16 +216,31 @@ private:
     static constexpr uint32 AMMO_STOCK = 600;
 
     void SellJunk(Creature* vendor);
+    void Repair(Creature* npc);
+    void Gossip(WorldObject* npc, GuideElement const& element, std::vector<GuideGossipCredit> const& credits);
+    void OpenGossip(WorldObject* npc);
+    void SelectGossip(WorldObject* npc, uint32 listId);
+    bool GossipByCredits(WorldObject* npc, std::vector<GuideGossipCredit> const& credits);
     void BuyItem(Creature* vendor, GuideElement const& element, uint32 index);
     void AuctionItem(GuideElement const& element, uint32 index);
     void BuySupplies(Creature* vendor);
+    void BuyMount(Creature* vendor);
 };
 
-// Uses the task's item: on its creature, object or spot, or equips it (a step's ".use").
+// Uses the task's item: on its creature, object or spot, equips it, or opens it (a step's ".use").
 class GuideUseAction : public NewRpgBaseAction
 {
 public:
     GuideUseAction(PlayerbotAI* botAI) : NewRpgBaseAction(botAI, "guide use") {}
+
+    bool Execute(Event event) override;
+};
+
+// In combat with the creature a Lure item's trap is for: back onto the trap, so it follows the bot into it.
+class GuideLureAction : public MovementAction
+{
+public:
+    GuideLureAction(PlayerbotAI* botAI) : MovementAction(botAI, "guide lure") {}
 
     bool Execute(Event event) override;
 };
@@ -234,6 +281,7 @@ private:
     static constexpr uint32 HEARTH_WAIT = 20 * IN_MILLISECONDS;
 
     void Reroute(bool noHearth, bool noFly);
+    std::string FlightRefusal(std::vector<uint32> const& nodes);
 };
 
 // Opens the task's object in reach (a quest item's box), by playerbots' own "open loot" (locks, opening spells); the
@@ -247,6 +295,7 @@ public:
 
 private:
     static constexpr uint32 OPEN_AGAIN = 3 * IN_MILLISECONDS;  // an object still there is opened or used again after
+    static constexpr uint8 STEP_INS = 3;  // a chest just out of reach: stepped up to this often, then left for another
 };
 
 // Eats, drinks or sits until ready for the next fight.

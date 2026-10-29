@@ -732,6 +732,7 @@ bool PlayerbotAIConfig::Initialize()
     AutoDoQuests = sConfigMgr->GetOption<bool>("Playerbots.AutoDoQuests", true);
     EnableNewRpgStrategy = sConfigMgr->GetOption<bool>("Playerbots.EnableNewRpgStrategy", true);
     GuideDataFile = sConfigMgr->GetOption<std::string>("Playerbots.Guide.DataFile", "");
+    GuideRoadFile = sConfigMgr->GetOption<std::string>("Playerbots.Guide.RoadFile", "");
     SafePull = sConfigMgr->GetOption<bool>("Playerbots.SafePull", false);
 
     RpgStatusProbWeight[RPG_WANDER_RANDOM] = sConfigMgr->GetOption<int32>("Playerbots.RpgStatusProbWeight.WanderRandom", 15);

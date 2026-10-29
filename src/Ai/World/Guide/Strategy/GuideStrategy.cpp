@@ -40,6 +40,7 @@ void GuideDeathStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 void GuideCombatStrategy::InitTriggers(std::vector<TriggerNode*>& triggers)
 {
     triggers.push_back(new TriggerNode("guide use now", {NextAction("guide use now", ACTION_EMERGENCY + 5)}));
+    triggers.push_back(new TriggerNode("guide lure", {NextAction("guide lure", ACTION_EMERGENCY + 4)}));
 }
 
 void GuideCombatStrategy::InitMultipliers(std::vector<Multiplier*>& multipliers)

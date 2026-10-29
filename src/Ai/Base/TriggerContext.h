@@ -255,6 +255,7 @@ public:
         creators["guide open"] = &TriggerContext::guide_open;
         creators["guide use"] = &TriggerContext::guide_use;
         creators["guide use now"] = &TriggerContext::guide_use_now;
+        creators["guide lure"] = &TriggerContext::guide_lure;
         creators["guide release"] = &TriggerContext::guide_release;
         creators["guide corpse run"] = &TriggerContext::guide_corpse_run;
         creators["guide attack"] = &TriggerContext::guide_attack;
@@ -508,6 +509,7 @@ private:
         return new GuideTaskTrigger(botAI, "guide use", GuideTaskTrigger::Kind::Use);
     }
     static Trigger* guide_use_now(PlayerbotAI* botAI) { return new GuideUseNowTrigger(botAI); }
+    static Trigger* guide_lure(PlayerbotAI* botAI) { return new GuideLureTrigger(botAI); }
     static Trigger* guide_open(PlayerbotAI* botAI)
     {
         return new GuideTaskTrigger(botAI, "guide open", GuideTaskTrigger::Kind::Open);

@@ -7,10 +7,12 @@
 #include "GuideRules.h"
 
 #include <algorithm>
+#include <limits>
 
 #include "DBCStores.h"
 #include "GuideInfo.h"
 #include "GuideMgr.h"
+#include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "ReputationMgr.h"
@@ -22,6 +24,8 @@
 
 namespace
 {
+constexpr uint32 SPELL_KODO_RIDING_CLASSIC = 132245;  // 3.4.3's id, not in the realm's spells
+
 bool InLog(Player* bot, uint32 questId)
 {
     QuestStatus status = bot->GetQuestStatus(questId);
@@ -77,6 +81,16 @@ bool HasGuideAura(Player* bot, GuideElement const& element)
 }
 
 // A ".maxlevel" naming a label: past its level, the route skips on to that step (its index; 0: no skip).
+// The hearthstone is bound in the area, as RestedXP tells: by the area's name (a subzone's, or the zone's)
+bool BoundIn(Player* bot, uint32 areaId)
+{
+    if (bot->m_homebindAreaId == areaId)
+        return true;
+    AreaTableEntry const* wanted = sAreaTableStore.LookupEntry(areaId);
+    AreaTableEntry const* bound = sAreaTableStore.LookupEntry(bot->m_homebindAreaId);
+    return wanted && bound && std::string(wanted->area_name[0]) == bound->area_name[0];
+}
+
 uint32 SkipTo(Player* bot, GuideStep const& step)
 {
     if (!step.condition.Holds(bot))
@@ -86,6 +100,51 @@ uint32 SkipTo(Player* bot, GuideStep const& step)
             bot->GetLevel() > element.id)
             return element.count;
     return 0;
+}
+
+// Guide levels from the name: "6-12 Mulgore" starts at 6 and ends at 12 (0: none named)
+uint32 GuideEndLevel(Guide const& guide)
+{
+    size_t dash = guide.name.find('-');
+    uint32 level = 0;
+    for (size_t i = dash == std::string::npos ? guide.name.size() : dash + 1; i < guide.name.size(); ++i)
+    {
+        char c = guide.name[i];
+        if (c < '0' || c > '9')
+            break;
+        level = level * 10 + uint32(c - '0');
+    }
+    return level;
+}
+
+// Quest work the character can do now: a quest it can take, one in its log to finish or hand in, a level to reach.
+// Work it can't (a quest it skipped and can no longer take, one not in the log to finish) doesn't hold it there.
+bool DoableWork(Player* bot, GuideElement const& element, std::string& why)
+{
+    Quest const* quest =
+        sObjectMgr->GetQuestTemplate(element.type == GuideElementType::Collect ? element.quest : element.id);
+    std::string name = quest ? quest->GetTitle() : std::to_string(element.id);
+    switch (element.type)
+    {
+        case GuideElementType::Accept:
+            why = "take " + name;
+            return quest && bot->CanTakeQuest(quest, false) && bot->CanAddQuest(quest, false);
+        case GuideElementType::TurnIn:
+            why = "hand in " + name;
+            return InLog(bot, element.id);
+        case GuideElementType::Complete:
+            why = Acore::StringFormat("{} (objective {}, in the log)", name, element.objective);
+            return InLog(bot, element.id);
+        case GuideElementType::Collect:
+            why = Acore::StringFormat("collect for {}", name);
+            return element.quest && (InLog(bot, element.quest) ||
+                                     (quest && bot->CanTakeQuest(quest, false) && bot->CanAddQuest(quest, false)));
+        case GuideElementType::Xp:
+            why = Acore::StringFormat("reach level {}", element.id);
+            return true;
+        default:
+            return false;
+    }
 }
 
 std::string QuestName(uint32 questId)
@@ -183,6 +242,19 @@ bool GuideRules::StepApplies(Player* bot, GuideStep const& step)
                 break;
             case GuideElementType::Group:
                 return false;
+            case GuideElementType::BindLocation:
+                if (BoundIn(bot, id) != bool(element.flags & 1))
+                    return false;
+                break;
+            case GuideElementType::Equipped:
+            {
+                Item* worn = element.count < EQUIPMENT_SLOT_END
+                                 ? bot->GetItemByPos(INVENTORY_SLOT_BAG_0, static_cast<uint8>(element.count))
+                                 : nullptr;
+                if ((worn && (!id || worn->GetEntry() == id)) != bool(element.flags & 1))
+                    return false;
+                break;
+            }
             default:
                 break;
         }
@@ -231,7 +303,13 @@ bool GuideRules::ElementDone(Player* bot, GuideElement const& element)
             return level > element.id || (level == element.id && xp >= next * want);
         }
         case GuideElementType::Train:
-            return bot->HasSpell(element.id);
+        {
+            // As the realm teaches it (riding: Apprentice Riding); no trainer here teaches it: nothing to do
+            if (bot->HasSpell(element.id) || GuideMgr::instance().IsUntrainable(element.id))
+                return true;
+            std::vector<uint32> const& as = GuideMgr::instance().GetTrainedAs(element.id);
+            return std::any_of(as.begin(), as.end(), [&](uint32 spell) { return bot->HasSpell(spell); });
+        }
         case GuideElementType::Abandon:
             return !InLog(bot, questId);
         case GuideElementType::Collect:
@@ -255,6 +333,53 @@ bool GuideRules::QuestWorkDone(Player* bot, GuideStep const& step, uint32 skippe
             return false;
     }
     return true;
+}
+
+std::set<uint32> GuideRules::FinishedKills(Player* bot, GuideStep const& step)
+{
+    std::set<uint32> finished;
+    std::set<uint32> open;
+    bool lastDone = false;
+    bool afterObjective = false;
+    for (GuideElement const& element : step.elements)
+    {
+        if (!Applies(bot, element))
+            continue;
+        if (element.type == GuideElementType::Complete || element.type == GuideElementType::Collect)
+        {
+            // Only a kill objective claims the ".mob" entries after it (an item's list may come before it); an
+            // unfinished item keeps its droppers
+            bool done = ElementDone(bot, element);
+            afterObjective = false;
+            uint32 item = element.type == GuideElementType::Collect ? element.id : 0;
+            Quest const* quest =
+                element.type == GuideElementType::Complete ? sObjectMgr->GetQuestTemplate(element.id) : nullptr;
+            std::vector<GuideObjective> objectives = quest ? Objectives(quest) : std::vector<GuideObjective>();
+            if (quest && element.objective && element.objective <= objectives.size())
+            {
+                GuideObjective const& objective = objectives[element.objective - 1];
+                if (objective.kind == GuideObjective::Kind::CreatureOrObject &&
+                    quest->RequiredNpcOrGo[objective.slot] > 0)
+                {
+                    (done ? finished : open).insert(static_cast<uint32>(quest->RequiredNpcOrGo[objective.slot]));
+                    lastDone = done;
+                    afterObjective = true;
+                }
+                else if (objective.kind == GuideObjective::Kind::Item)
+                    item = quest->RequiredItemId[objective.slot];
+            }
+            if (item && !done)
+            {
+                std::vector<uint32> const& droppers = GuideMgr::instance().GetItemDroppers(item);
+                open.insert(droppers.begin(), droppers.end());
+            }
+        }
+        else if (element.type == GuideElementType::Mob && afterObjective)
+            (lastDone ? finished : open).insert(element.entries.begin(), element.entries.end());
+    }
+    for (uint32 entry : open)
+        finished.erase(entry);
+    return finished;
 }
 
 bool GuideRules::HasQuestWork(Player* bot, GuideStep const& step)
@@ -400,16 +525,59 @@ bool GuideRules::AtAuctionHouse(Player* bot, GuideStep const& step)
 
 uint32 GuideRules::TrainerSpellFor(Trainer::Trainer const* trainer, uint32 wanted)
 {
+    // RestedXP's spell, or the one it teaches (1.12's teaching spell for Desperate Prayer: the trainer lists the spell)
+    std::vector<uint32> wantedAs = {wanted};
+    if (SpellInfo const* info = sSpellMgr->GetSpellInfo(wanted))
+        for (SpellEffectInfo const& effect : info->Effects)
+            if (effect.Effect == SPELL_EFFECT_LEARN_SPELL && effect.TriggerSpell)
+                wantedAs.push_back(effect.TriggerSpell);
     for (Trainer::Spell const& spell : trainer->GetSpells())
     {
-        if (spell.SpellId == wanted)
+        if (std::find(wantedAs.begin(), wantedAs.end(), spell.SpellId) != wantedAs.end())
             return spell.SpellId;
         if (SpellInfo const* info = sSpellMgr->GetSpellInfo(spell.SpellId))
             for (SpellEffectInfo const& effect : info->Effects)
                 if (effect.Effect == SPELL_EFFECT_LEARN_SPELL && effect.TriggerSpell == wanted)
                     return spell.SpellId;
     }
-    return 0;
+
+    // RestedXP names 1.12's racial riding ("Tiger Riding", "Undead Horsemanship"; 3.4.3's Kodo Riding has an id of its
+    // own): the realm teaches the core's riding skill instead (Apprentice Riding), the trainer's first riding spell.
+    // Else the trainer's spell of the same name (one the realm lists by another id: Desperate Prayer).
+    SpellInfo const* want = sSpellMgr->GetSpellInfo(wanted);
+    std::string name = want && want->SpellName[0] ? want->SpellName[0] : "";
+    auto endsWith = [&](std::string const& end)
+    { return name.size() > end.size() && name.compare(name.size() - end.size(), end.size(), end) == 0; };
+    bool riding = wanted == SPELL_KODO_RIDING_CLASSIC || endsWith(" Riding") || endsWith(" Piloting") ||
+                  endsWith(" Horsemanship");
+    uint32 ridingSpell = 0;
+    uint32 ridingLevel = std::numeric_limits<uint32>::max();
+    for (Trainer::Spell const& spell : trainer->GetSpells())
+    {
+        if (riding && spell.ReqSkillLine == SKILL_RIDING && spell.ReqLevel < ridingLevel)
+        {
+            ridingSpell = spell.SpellId;
+            ridingLevel = spell.ReqLevel;
+        }
+        SpellInfo const* info = sSpellMgr->GetSpellInfo(spell.SpellId);
+        if (riding || name.empty() || !info)
+            continue;
+        // The same spell, not a namesake: its name, rank and class (a pet's Claw isn't a druid's)
+        auto same = [&](SpellInfo const* other)
+        {
+            return other->SpellName[0] && name == other->SpellName[0] &&
+                   other->SpellFamilyName == want->SpellFamilyName &&
+                   std::string(other->Rank[0] ? other->Rank[0] : "") == (want->Rank[0] ? want->Rank[0] : "");
+        };
+        if (same(info))
+            return spell.SpellId;
+        for (SpellEffectInfo const& effect : info->Effects)
+            if (effect.Effect == SPELL_EFFECT_LEARN_SPELL)
+                if (SpellInfo const* taught = sSpellMgr->GetSpellInfo(effect.TriggerSpell))
+                    if (same(taught))
+                        return spell.SpellId;
+    }
+    return ridingSpell;
 }
 
 bool GuideRules::StillNeeded(Player* bot, GuideInfo const& info, uint32 questId)
@@ -440,81 +608,324 @@ bool GuideRules::StillNeeded(Player* bot, GuideInfo const& info, uint32 questId)
     return false;
 }
 
-bool GuideRules::Resume(Player* bot, GuideInfo& info)
+std::unordered_map<uint32, uint32> const& GuideRules::NeededItems(Player* bot, GuideInfo& info)
 {
-    // Walk the character's route: the first step with quest work left after the last step it certainly reached.
-    // Steps without quest work (travel, training, selling) are passed by: nothing shows whether they were done, and
-    // every start would walk back to them.
-    Guide const* foundGuide = nullptr;
-    uint32 foundStep = 0;
+    if (info.neededGuide == info.guide && info.neededStep == info.step && info.guide)
+        return info.neededItems;
+    info.neededGuide = info.guide;
+    info.neededStep = info.step;
+    info.neededItems.clear();
+    auto need = [&](uint32 item, uint32 count)
+    {
+        if (item)
+            info.neededItems[item] = std::max(info.neededItems[item], std::max(count, 1u));
+    };
+    Guide const* guide = info.guide;
+    uint32 step = info.step;
+    for (uint32 guides = 0; guide && guides < STILL_NEEDED_GUIDES; ++guides)
+    {
+        for (; step < guide->steps.size(); ++step)
+        {
+            GuideStep const& next = guide->steps[step];
+            if (!next.condition.Holds(bot))
+                continue;
+            for (GuideElement const& element : next.elements)
+            {
+                if (!Applies(bot, element))
+                    continue;
+                switch (element.type)
+                {
+                    case GuideElementType::Collect:
+                    case GuideElementType::ItemCount:
+                    case GuideElementType::Use:
+                        need(element.id, element.count);
+                        break;
+                    case GuideElementType::Accept:
+                    case GuideElementType::Complete:
+                    case GuideElementType::TurnIn:
+                        if (Quest const* quest = sObjectMgr->GetQuestTemplate(element.id);
+                            quest && !bot->GetQuestRewardStatus(element.id))
+                        {
+                            for (uint32 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+                                need(quest->RequiredItemId[i], quest->RequiredItemCount[i]);
+                            for (uint32 i = 0; i < QUEST_SOURCE_ITEM_IDS_COUNT; ++i)
+                                need(quest->ItemDrop[i], quest->ItemDropQuantity[i]);
+                            need(quest->GetSrcItemId(), quest->GetSrcItemCount());
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        guide = GuideMgr::instance().GetNextGuide(bot, *guide);
+        step = 0;
+    }
+    return info.neededItems;
+}
+
+uint32 GuideRules::GuideStartLevel(Guide const& guide)
+{
+    uint32 level = 0;
+    for (char c : guide.name)
+    {
+        if (c < '0' || c > '9')
+            break;
+        level = level * 10 + uint32(c - '0');
+    }
+    return level;
+}
+
+bool GuideRules::Resume(Player* bot, GuideInfo& info, Guide const* from, std::string* reached)
+{
+    // Walk the character's route for the first step with quest work it can do now (DoableWork): a quest to take,
+    // finish or hand in. Steps without quest work (travel, training, selling) are passed by: nothing shows whether
+    // they were done, and every start would walk back to them. A guide ending below the character's level is behind
+    // it: its quests to take are passed by, but those in the log still hold it there (finished ones left unhanded
+    // otherwise); one starting more than RESUME_LEVELS_AHEAD above it ends the walk. A guide named (from) is walked
+    // whatever its levels.
+    uint32 level = bot->GetLevel();
     uint32 guides = 0;
-    for (Guide const* guide = GuideMgr::instance().GetStartGuide(bot); guide && guides < 500;
+    if (reached)
+        reached->clear();
+    for (Guide const* guide = from ? from : GuideMgr::instance().GetStartGuide(bot); guide && guides < 500;
          guide = GuideMgr::instance().GetNextGuide(bot, *guide), ++guides)
     {
+        if (guide != from && GuideStartLevel(*guide) > level + RESUME_LEVELS_AHEAD)
+            break;
+        uint32 endLevel = GuideEndLevel(*guide);
+        bool behind = guide != from && endLevel && endLevel < level;
         for (uint32 i = 0; i < guide->steps.size(); ++i)
         {
             GuideStep const& step = guide->steps[i];
-            if (uint32 to = SkipTo(bot, step))
+            if (uint32 to = behind ? 0 : SkipTo(bot, step))
             {
                 i = to - 1;
                 continue;
             }
-            if (!StepApplies(bot, step))
-                continue;
-            if (Reached(bot, step))
-                foundGuide = nullptr;
             // Side steps are never the current step (they run alongside later ones).
-            bool done = step.side || !HasQuestWork(bot, step) || QuestWorkDone(bot, step);
-            if (!done && !foundGuide)
+            if (step.side || !(behind ? step.condition.Holds(bot) : StepApplies(bot, step)))
+                continue;
+            for (GuideElement const& element : step.elements)
             {
-                foundGuide = guide;
-                foundStep = i;
+                std::string why;
+                bool toTake = element.type == GuideElementType::Accept ||
+                              (element.type == GuideElementType::Collect && !InLog(bot, element.quest));
+                if (!element.IsQuestWork() || (behind && toTake) || !Applies(bot, element) ||
+                    ElementDone(bot, element) || !DoableWork(bot, element, why))
+                    continue;
+                info.Reset();
+                info.guide = guide;
+                info.step = i;
+                if (reached)
+                    *reached = why;
+                return true;
             }
         }
     }
 
     info.Reset();
-    if (!foundGuide)
-        return false;
-    info.guide = foundGuide;
-    info.step = foundStep;
-    return true;
+    // A guide named with nothing left to do in it or after: from its first step
+    if (from)
+    {
+        info.guide = from;
+        return true;
+    }
+    return false;
 }
+
+GuideElement const* GuideRules::CatchUpTurnIn(Player* bot, Guide const& guide, GuideStep const& step)
+{
+    if (!step.condition.Holds(bot))
+        return nullptr;
+    for (GuideElement const& element : step.elements)
+    {
+        if (element.type != GuideElementType::TurnIn || !Applies(bot, element) ||
+            bot->GetQuestStatus(element.id) != QUEST_STATUS_COMPLETE)
+            continue;
+        GuideInfo later;
+        later.guide = GuideMgr::instance().GetNextGuide(bot, guide);
+        if (later.guide && StillNeeded(bot, later, element.id))
+            continue;
+        return &element;
+    }
+    return nullptr;
+}
+
+namespace
+{
+// Makes step the current one, its per-step state fresh
+void EnterStep(GuideInfo& info, uint32 step)
+{
+    info.step = step;
+    info.area = info.reached = info.serviced = info.stuckSince = 0;
+    info.areaAnchor = WorldPosition();
+    info.detour = WorldPosition();
+    info.serviceSearched.clear();
+    info.repairSearched.clear();
+    info.vendorSearched.clear();
+    info.vendorChase.Clear();
+    info.skippedWork = 0;
+    info.retake.clear();
+    info.toldUnfinished = false;
+}
+
+// A side step done as a step of its own, then on from (or back to, sideBack) step from
+void EnterSide(GuideInfo& info, uint32 side, uint32 from)
+{
+    info.sidesFinished.insert(side);
+    EnterStep(info, side);
+    info.finishSide = true;
+    info.sideReturn = from;
+}
+}  // namespace
 
 bool GuideRules::Advance(Player* bot, GuideInfo& info)
 {
     Guide const* guide = info.guide;
+    // Leaving the step a side step stays active through with its quest work unfinished and still wanted further on
+    // (the bandanas weren't all in when Princess died): the side step first, as a step of its own; then on from here
+    if (guide && !info.catchUp)
+    {
+        uint32 const from = info.finishSide ? info.sideReturn : info.step;
+        for (uint32 i = 0; i < guide->steps.size(); ++i)
+        {
+            GuideStep const& side = guide->steps[i];
+            if (!side.side || side.sideUntil != from || info.sidesFinished.count(i) || !StepApplies(bot, side) ||
+                !HasQuestWork(bot, side) || QuestWorkDone(bot, side))
+                continue;
+            GuideInfo later;
+            later.guide = guide;
+            later.step = from + 1;
+            bool wanted = false;
+            for (GuideElement const& element : side.elements)
+                if ((element.type == GuideElementType::Complete || element.type == GuideElementType::Collect) &&
+                    Applies(bot, element) && !ElementDone(bot, element))
+                {
+                    uint32 questId = element.type == GuideElementType::Complete ? element.id : element.quest;
+                    wanted |= questId && StillNeeded(bot, later, questId);
+                }
+            if (!wanted && !info.sideBack)
+                continue;
+            LOG_INFO("playerbots.guide", "{}: {} side step {} unfinished as step {} is done; finishing it first",
+                     bot->GetName(), guide->name, side.number, guide->steps[from].number);
+            EnterSide(info, i, from);
+            return true;
+        }
+        if (info.finishSide && info.sideBack)
+        {
+            // Fetched what the step's use needs: back to that step
+            EnterStep(info, info.sideReturn);
+            info.finishSide = info.sideBack = false;
+            return true;
+        }
+        if (info.finishSide)
+            info.step = info.sideReturn;
+        info.finishSide = false;
+    }
     uint32 step = info.step + 1;
-    if (uint32 to = guide ? SkipTo(bot, guide->steps[info.step]) : 0)
+    if (uint32 to = guide && !info.catchUp ? SkipTo(bot, guide->steps[info.step]) : 0)
         step = to;
+    auto enter = [&](uint32 at)
+    {
+        if (info.guide != guide)
+        {
+            info.sideDone.clear();
+            LOG_INFO("playerbots.guide", "{}: on to guide {}", bot->GetName(), guide->name);
+        }
+        info.guide = guide;
+        EnterStep(info, at);
+    };
     uint32 guides = 0;
     while (guide && guides < 500)
     {
-        for (; step < guide->steps.size(); ++step)
+        if (info.catchUp)
         {
-            if (uint32 to = SkipTo(bot, guide->steps[step]))
+            for (; step < guide->steps.size(); ++step)
+                if (CatchUpTurnIn(bot, *guide, guide->steps[step]))
+                {
+                    enter(step);
+                    return true;
+                }
+            info.catchUp = false;
+            LOG_INFO("playerbots.guide", "{}: caught up on {}", bot->GetName(), guide->name);
+        }
+        else
+        {
+            for (; step < guide->steps.size(); ++step)
             {
-                step = to - 1;
-                continue;
+                if (uint32 to = SkipTo(bot, guide->steps[step]))
+                {
+                    LOG_INFO("playerbots.guide", "{}: {} step {} skips on to step {} (past its level)", bot->GetName(),
+                             guide->name, guide->steps[step].number,
+                             to < guide->steps.size() ? guide->steps[to].number : 0);
+                    step = to - 1;
+                    continue;
+                }
+                if (!guide->steps[step].side && StepApplies(bot, guide->steps[step]))
+                {
+                    info.sidesFinished.clear();
+                    enter(step);
+                    return true;
+                }
             }
-            if (!guide->steps[step].side && StepApplies(bot, guide->steps[step]))
-            {
-                if (info.guide != guide)
-                    info.sideDone.clear();
-                info.guide = guide;
-                info.step = step;
-                info.area = info.reached = info.serviced = info.stuckSince = 0;
-                info.detour = WorldPosition();
-                info.serviceSearched.clear();
-                info.skippedWork = 0;
-                info.retake.clear();
-                info.toldUnfinished = false;
-                return true;
-            }
+            // Leaving the guide: its quests finished in the log are handed in first (steps passed by, or done
+            // since), unless a step further on hands them in
+            for (uint32 i = 0; i < guide->steps.size(); ++i)
+                if (GuideElement const* turnIn = CatchUpTurnIn(bot, *guide, guide->steps[i]))
+                {
+                    LOG_INFO("playerbots.guide", "{}: catching up on {} before leaving it: {} (step {}) first",
+                             bot->GetName(), guide->name, QuestName(turnIn->id), guide->steps[i].number);
+                    enter(i);
+                    info.catchUp = true;
+                    return true;
+                }
         }
         guide = GuideMgr::instance().GetNextGuide(bot, *guide);
         step = 0;
         ++guides;
+    }
+    return false;
+}
+
+bool GuideRules::FetchReagents(Player* bot, GuideInfo& info)
+{
+    // The step's ".use" lacks its spell's reagents (the Filled Cleansing Bowl: the Blackwood fruit, grain and nut
+    // samples), which side steps active through it collect, but only when a holder comes close: those side steps
+    // first, as steps of their own; then back to this one
+    Guide const* guide = info.guide;
+    if (!guide || info.catchUp || info.finishSide || info.step >= guide->steps.size())
+        return false;
+    std::set<uint32> missing;
+    for (GuideElement const& element : guide->steps[info.step].elements)
+    {
+        if (element.type != GuideElementType::Use || !Applies(bot, element) || !bot->HasItemCount(element.id))
+            continue;
+        GuideUse const* use = GuideMgr::instance().GetUse(element.id);
+        SpellInfo const* spell = use && use->spell ? sSpellMgr->GetSpellInfo(use->spell) : nullptr;
+        if (!spell)
+            continue;
+        for (uint8 i = 0; i < MAX_SPELL_REAGENTS; ++i)
+            if (spell->Reagent[i] > 0 && !bot->HasItemCount(uint32(spell->Reagent[i]), spell->ReagentCount[i]))
+                missing.insert(uint32(spell->Reagent[i]));
+    }
+    if (missing.empty())
+        return false;
+    for (uint32 i = 0; i < info.step; ++i)
+    {
+        GuideStep const& side = guide->steps[i];
+        if (!side.side || side.sideUntil < info.step || info.sidesFinished.count(i) || !StepApplies(bot, side))
+            continue;
+        for (GuideElement const& element : side.elements)
+            if (element.type == GuideElementType::Collect && missing.count(element.id) && Applies(bot, element) &&
+                !ElementDone(bot, element))
+            {
+                LOG_INFO("playerbots.guide", "{}: {} step {} needs what side step {} collects; that first",
+                         bot->GetName(), guide->name, guide->steps[info.step].number, side.number);
+                EnterSide(info, i, info.step);
+                info.sideBack = true;
+                return true;
+            }
     }
     return false;
 }
@@ -531,7 +942,7 @@ std::string GuideRules::Describe(Player* bot, GuideInfo const& info)
             if (leg.kind == GuideLeg::Kind::Portal)
                 what = "going through the portal";
             else if (leg.kind == GuideLeg::Kind::Hearth)
-                what = "using the hearthstone";
+                what = leg.entry ? "teleporting" : "using the hearthstone";
             else if (leg.kind == GuideLeg::Kind::Fly)
                 what = bot->IsInFlight() ? "flying" : "going to the flight master";
             else if (leg.kind == GuideLeg::Kind::Transport)
@@ -580,7 +991,9 @@ std::string GuideRules::Describe(Player* bot, GuideInfo const& info)
             what = "resting";
             break;
         case GuideTaskType::Service:
-            what = "training / selling";
+            what = task.repair   ? "repairing"
+                   : task.vendor ? "selling junk on the way"
+                                 : "visiting an NPC (training, selling, talking)";
             break;
         case GuideTaskType::Kill:
             what = task.questId ? Acore::StringFormat("{} (objective {})", QuestName(task.questId), task.objective)

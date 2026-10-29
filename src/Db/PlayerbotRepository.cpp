@@ -7,6 +7,7 @@
 #include "PlayerbotRepository.h"
 #include "PlayerbotsDatabase.h"
 #include "AiObjectContext.h"
+#include "GuideProgress.h"
 
 void PlayerbotRepository::Load(PlayerbotAI* botAI)
 {
@@ -45,6 +46,8 @@ void PlayerbotRepository::Load(PlayerbotAI* botAI)
 
         botAI->GetAiObjectContext()->Load(values);
     }
+
+    GuideProgress::Restore(botAI);
 }
 
 void PlayerbotRepository::Save(PlayerbotAI* botAI)

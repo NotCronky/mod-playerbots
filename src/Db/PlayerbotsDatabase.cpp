@@ -26,6 +26,9 @@ void PlayerbotsDatabaseConnection::DoPrepareStatements()
     PrepareStatement(PLAYERBOTS_DEL_DB_STORE, "DELETE FROM `playerbots_db_store` WHERE `guid` = ?", CONNECTION_SYNCH);
     PrepareStatement(PLAYERBOTS_INS_DB_STORE, "INSERT INTO `playerbots_db_store` (`guid`, `key`, `value`) VALUES (?, ?, ?)", CONNECTION_SYNCH);
 
+    PrepareStatement(PLAYERBOTS_SEL_GUIDE_PROGRESS, "SELECT `guide`, `step`, `active` FROM `playerbots_guide_progress` WHERE `guid` = ?", CONNECTION_SYNCH);
+    PrepareStatement(PLAYERBOTS_REP_GUIDE_PROGRESS, "REPLACE INTO `playerbots_guide_progress` (`guid`, `guide`, `step`, `active`) VALUES (?, ?, ?, ?)", CONNECTION_ASYNC);
+
     PrepareStatement(PLAYERBOTS_SEL_ENCHANTS, "SELECT class, spec, spellid, slotid FROM playerbots_enchants", CONNECTION_SYNCH);
 
     PrepareStatement(PLAYERBOTS_SEL_EQUIP_CACHE, "SELECT clazz, lvl, slot, quality, item FROM playerbots_equip_cache", CONNECTION_SYNCH);

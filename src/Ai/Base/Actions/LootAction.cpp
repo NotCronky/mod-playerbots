@@ -430,7 +430,10 @@ bool StoreLootAction::Execute(Event event)
         if (!proto)
             continue;
 
-        if (!IsRealPlayer(botAI->GetMaster()) && AI_VALUE(uint8, "bag space") > 80)
+        // Bags nearly full: only what stacks onto a stack held (never a quest's item; a self-bot is a player's own
+        // character, its bags left to the player)
+        if (!IsRealPlayer(botAI->GetMaster()) && !IsSelfBot(bot) && !bot->HasQuestForItem(itemid) &&
+            AI_VALUE(uint8, "bag space") > 80)
         {
             uint32 maxStack = proto->GetMaxStackSize();
             if (maxStack == 1)

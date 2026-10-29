@@ -1435,10 +1435,15 @@ Playerbots.EnableNewRpgStrategy = 1
 # The route file, written for the realm by mod-progressive's tools/guide_data.py. Read once at startup.
 # Its decisions (each new task, with the target and whether a whole path leads there) are logged at debug level
 # under playerbots.guide, falling back to the playerbots logger; for a file of their own, in worldserver.conf:
-#   Appender.Guide=2,5,0,Guide.log,w
+#   Appender.Guide=2,5,1,Guide.log,a
 #   Logger.playerbots.guide=5,Guide
 # Default: "" (off)
 Playerbots.Guide.DataFile = ""
+
+# The roads (mod-progressive's tools/road_data.py, from the realm's terrain): the guide's trips walk along them
+# rather than straight across the land. Read once at startup.
+# Default: "" (none: trips use the travel node store's walks only)
+Playerbots.Guide.RoadFile = ""
 
 # Safe pulls: bots grinding pick a mob that brings nothing along (no pack mates within 10 yards, no other
 # aggressive mob whose aggro range covers the fight or the walk to it); tanks take one pack at a time. When every

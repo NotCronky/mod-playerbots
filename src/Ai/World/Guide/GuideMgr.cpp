@@ -9,12 +9,16 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <map>
+#include <set>
 #include <sstream>
+#include <tuple>
 #include <unordered_set>
 
 #include "ConditionMgr.h"
 #include "DBCStores.h"
 #include "DatabaseEnv.h"
+#include "GuideRules.h"
 #include "GuideTravel.h"
 #include "Log.h"
 #include "ObjectMgr.h"
@@ -23,8 +27,10 @@
 #include "SmartScriptMgr.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
+#include "StringFormat.h"
 #include "Timer.h"
 #include "Tokenize.h"
+#include "Trainer.h"
 
 namespace
 {
@@ -48,17 +54,18 @@ constexpr uint32 HORDE_PLAYERS = 2;
 std::vector<uint32> const NONE;
 std::vector<GuideSpawn> const NO_SPAWNS;
 
-// "human/!warlock dwarf" (terms joined by spaces in a step's column, by "&" after an element's "@")
-GuideCondition ParseCondition(std::string const& text, char termSeparator)
+// "orc rogue/troll !priest" (groups split by "/"; a group's entries joined by spaces in a step's column, by "&"
+// after an element's "@" or a next guide's)
+GuideCondition ParseCondition(std::string const& text, char entrySeparator)
 {
     GuideCondition condition;
     if (text.empty() || text == "-")
         return condition;
 
-    for (std::string_view term : Acore::Tokenize(text, termSeparator, false))
+    for (std::string_view group : Acore::Tokenize(text, '/', false))
     {
         std::vector<GuideConditionOption> options;
-        for (std::string_view word : Acore::Tokenize(term, '/', false))
+        for (std::string_view word : Acore::Tokenize(group, entrySeparator, false))
         {
             GuideConditionOption option;
             if (!word.empty() && word[0] == '!')
@@ -80,7 +87,7 @@ GuideCondition ParseCondition(std::string const& text, char termSeparator)
             options.push_back(option);
         }
         if (!options.empty())
-            condition.terms.push_back(std::move(options));
+            condition.groups.push_back(std::move(options));
     }
     return condition;
 }
@@ -156,6 +163,8 @@ bool ParseElement(std::string const& column, GuideElement& element)
     }
     else if (type == "hs" || type == "home")
         element.type = type == "hs" ? GuideElementType::Hearth : GuideElementType::Home;
+    else if (type == "deathskip")
+        element.type = GuideElementType::DeathSkip;
     else if (type == "fp" || type == "fly" || type == "side")
     {
         element.type = type == "fp"    ? GuideElementType::FlightPath
@@ -210,6 +219,30 @@ bool ParseElement(std::string const& column, GuideElement& element)
     }
     else if (type == "group")
         element.type = GuideElementType::Group;
+    else if (type == "bindlocation")
+    {
+        element.type = GuideElementType::BindLocation;
+        in >> element.id >> element.flags;
+    }
+    else if (type == "equipped")
+    {
+        element.type = GuideElementType::Equipped;
+        in >> element.count >> element.id >> element.flags;
+    }
+    else if (type == "gossip")
+    {
+        element.type = GuideElementType::Gossip;
+        std::string options;
+        in >> element.id >> options;
+        element.entries = ParseEntries(options);
+    }
+    else if (type == "keep")
+    {
+        element.type = GuideElementType::Keep;
+        std::string items;
+        in >> items;
+        element.entries = ParseEntries(items);
+    }
     else if (type == "other")
     {
         element.type = GuideElementType::Other;
@@ -227,22 +260,24 @@ bool GuideCondition::Holds(Player* player) const
     uint32 raceMask = player->getRaceMask();
     uint32 classMask = player->getClassMask();
     int8 team = static_cast<int8>(player->GetTeamId());
-    for (std::vector<GuideConditionOption> const& term : terms)
+    if (groups.empty())
+        return true;
+    for (std::vector<GuideConditionOption> const& group : groups)
     {
-        bool any = false;
-        for (GuideConditionOption const& option : term)
+        bool all = true;
+        for (GuideConditionOption const& option : group)
         {
             bool match = (option.raceMask & raceMask) || (option.classMask & classMask) || option.team == team;
-            if (match != option.negate)
+            if (match == option.negate)
             {
-                any = true;
+                all = false;
                 break;
             }
         }
-        if (!any)
-            return false;
+        if (all)
+            return true;
     }
-    return true;
+    return false;
 }
 
 bool GuideElement::IsQuestWork() const
@@ -255,7 +290,7 @@ bool GuideElement::IsService() const
 {
     return type == GuideElementType::Train || type == GuideElementType::Trainer || type == GuideElementType::Vendor ||
            type == GuideElementType::Home || type == GuideElementType::FlightPath || type == GuideElementType::Fly ||
-           type == GuideElementType::Hearth || type == GuideElementType::Use;
+           type == GuideElementType::Hearth || type == GuideElementType::Use || type == GuideElementType::Gossip;
 }
 
 void GuideMgr::Load(std::string const& path)
@@ -300,8 +335,17 @@ void GuideMgr::Load(std::string const& path)
         {
             Guide& guide = _guides[columns[1]];
             guide.name = columns[1];
-            for (std::string_view next : Acore::Tokenize(columns[2], ';', false))
-                guide.next.emplace_back(next);
+            // "name@condition;name..." (a group's entries joined by "&", as on elements)
+            for (std::string_view entry : Acore::Tokenize(columns[2], ';', false))
+            {
+                std::string text(entry);
+                GuideNext next;
+                size_t at = text.find('@');
+                next.name = text.substr(0, at);
+                if (at != std::string::npos)
+                    next.condition = ParseCondition(text.substr(at + 1), '&');
+                guide.next.push_back(std::move(next));
+            }
             guide.condition = ParseCondition(columns[3], ' ');
         }
         else if (columns[0] == "S" && columns.size() >= 5)
@@ -337,13 +381,62 @@ void GuideMgr::Load(std::string const& path)
             guide->second.labels = std::move(guideLabels);
     ResolveLabels();
     LoadQuestRelations();
+    LoadGossipCredits();
     LoadUses();
     LoadItemDroppers();
+    LoadTrains();
     LoadSpawns();
     LoadCreatureIndexes();
     LOG_INFO("server.loading", ">> Loaded {} guides ({} steps, {} skipped) for the guide strategy in {} ms",
              _guides.size(), steps, skipped, GetMSTimeDiffToNow(oldMSTime));
     GuideTravel::instance().Load();
+}
+
+void GuideMgr::LoadTrains()
+{
+    // Each ".train" spell as the realm's trainers teach it: the trainer's spell (GuideRules::TrainerSpellFor) and what
+    // it gives (a trainer spell that casts learns the spells it wraps). None teaches it: passed by, and listed here.
+    std::vector<Trainer::Trainer const*> trainers;
+    for (auto const& [entry, creature] : *sObjectMgr->GetCreatureTemplates())
+        if (Trainer::Trainer const* trainer = sObjectMgr->GetTrainer(entry))
+            trainers.push_back(trainer);
+    std::set<uint32> wanted;
+    for (auto const& [name, guide] : _guides)
+        for (GuideStep const& step : guide.steps)
+            for (GuideElement const& element : step.elements)
+                if (element.type == GuideElementType::Train)
+                    wanted.insert(element.id);
+    std::string untrainable;
+    for (uint32 spell : wanted)
+    {
+        uint32 taught = 0;
+        for (Trainer::Trainer const* trainer : trainers)
+            if ((taught = GuideRules::TrainerSpellFor(trainer, spell)))
+                break;
+        if (!taught)
+        {
+            _untrainable.insert(spell);
+            SpellInfo const* info = sSpellMgr->GetSpellInfo(spell);
+            untrainable += Acore::StringFormat("{}{} ({})", untrainable.empty() ? "" : ", ",
+                                               info && info->SpellName[0] ? info->SpellName[0] : "?", spell);
+            continue;
+        }
+        std::vector<uint32>& as = _trainedAs[spell];
+        as.push_back(taught);
+        if (SpellInfo const* info = sSpellMgr->GetSpellInfo(taught))
+            for (SpellEffectInfo const& effect : info->Effects)
+                if (effect.Effect == SPELL_EFFECT_LEARN_SPELL && effect.TriggerSpell)
+                    as.push_back(effect.TriggerSpell);
+    }
+    LOG_INFO("server.loading", ">> Guide strategy: {} trained spells, {} no trainer teaches (passed by): {}",
+             wanted.size(), _untrainable.size(), untrainable);
+}
+
+std::vector<uint32> const& GuideMgr::GetTrainedAs(uint32 spell) const
+{
+    static std::vector<uint32> const none;
+    auto it = _trainedAs.find(spell);
+    return it != _trainedAs.end() ? it->second : none;
 }
 
 void GuideMgr::LoadQuestRelations()
@@ -428,89 +521,137 @@ void GuideMgr::ResolveLabels()
 void GuideMgr::LoadUses()
 {
     // Each ".use" item's spell: how it is aimed (spell focus, object, creature, spot, self), what at (the spell's
-    // target conditions, and creatures whose SmartAI answers being hit by it), at what health, alive or dead.
+    // target conditions, and creatures whose SmartAI answers being hit by it), at what health, alive or dead. And the
+    // items whose use completes a quest the route has (the Winterhoof Cleansing Totem at the well): the step's
+    // ".complete" uses them, though RestedXP only says so in its text.
     _uses.clear();
+    _keep.clear();
+    _questUseItems.clear();
     std::unordered_map<uint32, uint32> itemBySpell;
+    std::vector<uint32> wanted;
+    std::unordered_set<uint32> completes;
     for (auto const& [name, guide] : _guides)
         for (GuideStep const& step : guide.steps)
             for (GuideElement const& element : step.elements)
             {
-                if (element.type != GuideElementType::Use || _uses.count(element.id))
-                    continue;
-                ItemTemplate const* proto = sObjectMgr->GetItemTemplate(element.id);
-                if (!proto)
-                    continue;
-
-                GuideUse use;
-                for (auto const& spell : proto->Spells)
-                    if (spell.SpellId > 0 && spell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
-                    {
-                        use.spell = static_cast<uint32>(spell.SpellId);
-                        break;
-                    }
-                SpellInfo const* spellInfo = use.spell ? sSpellMgr->GetSpellInfo(use.spell) : nullptr;
-                if (!spellInfo)
-                {
-                    if (proto->Class == ITEM_CLASS_WEAPON || proto->Class == ITEM_CLASS_ARMOR)
-                    {
-                        use.mode = GuideUse::Mode::Equip;
-                        _uses[element.id] = use;
-                    }
-                    continue;
-                }
-
-                bool nearbyUnit = false;
-                bool nearbyObject = false;
-                for (SpellEffectInfo const& effect : spellInfo->Effects)
-                {
-                    for (Targets target : {effect.TargetA.GetTarget(), effect.TargetB.GetTarget()})
-                    {
-                        nearbyUnit |= target == TARGET_UNIT_NEARBY_ENTRY;
-                        nearbyObject |= target == TARGET_GAMEOBJECT_NEARBY_ENTRY;
-                    }
-                    if (!effect.ImplicitTargetConditions)
-                        continue;
-                    for (Condition const* condition : *effect.ImplicitTargetConditions)
-                    {
-                        if (condition->NegativeCondition)
-                            continue;
-                        if (condition->ConditionType == CONDITION_OBJECT_ENTRY_GUID && condition->ConditionValue2)
-                        {
-                            if (condition->ConditionValue1 == TYPEID_UNIT)
-                                use.units.push_back(condition->ConditionValue2);
-                            else if (condition->ConditionValue1 == TYPEID_GAMEOBJECT)
-                                use.objects.push_back(condition->ConditionValue2);
-                        }
-                        else if (condition->ConditionType == CONDITION_HP_PCT &&
-                                 (condition->ConditionValue2 == COMP_TYPE_LOW ||
-                                  condition->ConditionValue2 == COMP_TYPE_LOW_EQ))
-                            use.health = static_cast<float>(condition->ConditionValue1);
-                    }
-                }
-                if (spellInfo->TargetAuraState == AURA_STATE_HEALTHLESS_20_PERCENT)
-                    use.health = 20.0f;
-                else if (spellInfo->TargetAuraState == AURA_STATE_HEALTHLESS_35_PERCENT)
-                    use.health = 35.0f;
-                use.corpse = spellInfo->IsAllowingDeadTarget();
-                use.focus = spellInfo->RequiresSpellFocus;
-                use.range = std::max({spellInfo->GetMaxRange(false), spellInfo->GetMaxRange(true), 5.0f});
-
-                uint32 mask = spellInfo->GetExplicitTargetMask();
-                if (use.focus)
-                    use.mode = GuideUse::Mode::Focus;
-                else if (mask & TARGET_FLAG_GAMEOBJECT_MASK)
-                    use.mode = GuideUse::Mode::Object;
-                else if (mask & (TARGET_FLAG_UNIT_MASK | TARGET_FLAG_CORPSE_MASK))
-                    use.mode = GuideUse::Mode::Unit;
-                else if (nearbyObject)
-                    use.mode = GuideUse::Mode::NearbyObject;
-                else if (nearbyUnit)
-                    use.mode = GuideUse::Mode::NearbyUnit;
-                else if (mask & TARGET_FLAG_DEST_LOCATION)
-                    use.mode = GuideUse::Mode::Dest;
-                _uses[element.id] = use;
-                itemBySpell[use.spell] = element.id;
+                if (element.type == GuideElementType::Keep)
+                    _keep.insert(element.entries.begin(), element.entries.end());
+                else if (element.type == GuideElementType::Use)
+                    wanted.push_back(element.id);
+                else if (element.type == GuideElementType::Complete)
+                    completes.insert(element.id);
             }
+    for (auto const& [entry, proto] : *sObjectMgr->GetItemTemplateStore())
+        for (auto const& spell : proto.Spells)
+            if (spell.SpellId > 0 && spell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+                if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(static_cast<uint32>(spell.SpellId)))
+                    for (SpellEffectInfo const& effect : spellInfo->Effects)
+                        if (effect.Effect == SPELL_EFFECT_QUEST_COMPLETE && completes.count(effect.MiscValue) &&
+                            !_questUseItems.count(effect.MiscValue))
+                        {
+                            _questUseItems[effect.MiscValue] = entry;
+                            wanted.push_back(entry);
+                        }
+
+    for (uint32 item : wanted)
+    {
+        if (_uses.count(item))
+            continue;
+        ItemTemplate const* proto = sObjectMgr->GetItemTemplate(item);
+        if (!proto)
+            continue;
+
+        GuideUse use;
+        for (auto const& spell : proto->Spells)
+            if (spell.SpellId > 0 && spell.SpellTrigger == ITEM_SPELLTRIGGER_ON_USE)
+            {
+                use.spell = static_cast<uint32>(spell.SpellId);
+                break;
+            }
+        SpellInfo const* spellInfo = use.spell ? sSpellMgr->GetSpellInfo(use.spell) : nullptr;
+        if (!spellInfo)
+        {
+            // Worn (a weapon, goggles, a detector), or opened (a crate, a footlocker)
+            if (proto->InventoryType != INVTYPE_NON_EQUIP)
+                use.mode = GuideUse::Mode::Equip;
+            else if (proto->HasFlag(ITEM_FLAG_HAS_LOOT))
+                use.mode = GuideUse::Mode::Open;
+            else
+                continue;
+            _uses[item] = use;
+            continue;
+        }
+
+        bool nearbyUnit = false;
+        bool nearbyObject = false;
+        for (SpellEffectInfo const& effect : spellInfo->Effects)
+        {
+            for (Targets target : {effect.TargetA.GetTarget(), effect.TargetB.GetTarget()})
+            {
+                nearbyUnit |= target == TARGET_UNIT_NEARBY_ENTRY;
+                nearbyObject |= target == TARGET_GAMEOBJECT_NEARBY_ENTRY;
+            }
+            if (!effect.ImplicitTargetConditions)
+                continue;
+            for (Condition const* condition : *effect.ImplicitTargetConditions)
+            {
+                if (condition->NegativeCondition)
+                    continue;
+                if (condition->ConditionType == CONDITION_OBJECT_ENTRY_GUID && condition->ConditionValue2)
+                {
+                    if (condition->ConditionValue1 == TYPEID_UNIT)
+                        use.units.push_back(condition->ConditionValue2);
+                    else if (condition->ConditionValue1 == TYPEID_GAMEOBJECT)
+                        use.objects.push_back(condition->ConditionValue2);
+                }
+                else if (condition->ConditionType == CONDITION_HP_PCT &&
+                         (condition->ConditionValue2 == COMP_TYPE_LOW ||
+                          condition->ConditionValue2 == COMP_TYPE_LOW_EQ))
+                    use.health = static_cast<float>(condition->ConditionValue1);
+            }
+        }
+        if (spellInfo->TargetAuraState == AURA_STATE_HEALTHLESS_20_PERCENT)
+            use.health = 20.0f;
+        else if (spellInfo->TargetAuraState == AURA_STATE_HEALTHLESS_35_PERCENT)
+            use.health = 35.0f;
+        use.corpse = spellInfo->IsAllowingDeadTarget();
+        use.focus = spellInfo->RequiresSpellFocus;
+        use.range = std::max({spellInfo->GetMaxRange(false), spellInfo->GetMaxRange(true), 5.0f});
+
+        // A trap it places (itself, or linked to the spell focus it places): Tharnariun's Hope's bear trap
+        for (SpellEffectInfo const& effect : spellInfo->Effects)
+            if (effect.Effect == SPELL_EFFECT_TRANS_DOOR || effect.Effect == SPELL_EFFECT_SUMMON_OBJECT_WILD)
+                if (GameObjectTemplate const* placed = sObjectMgr->GetGameObjectTemplate(effect.MiscValue))
+                {
+                    if (placed->type == GAMEOBJECT_TYPE_TRAP)
+                        use.trap = placed->entry;
+                    else if (placed->type == GAMEOBJECT_TYPE_SPELL_FOCUS && placed->spellFocus.linkedTrapId)
+                        use.trap = placed->spellFocus.linkedTrapId;
+                }
+        bool trap = use.trap != 0;
+
+        uint32 mask = spellInfo->GetExplicitTargetMask();
+        if (trap)
+            use.mode = GuideUse::Mode::Lure;
+        else if (use.focus)
+            use.mode = GuideUse::Mode::Focus;
+        else if (mask & TARGET_FLAG_GAMEOBJECT_MASK)
+            use.mode = GuideUse::Mode::Object;
+        else if (mask & (TARGET_FLAG_UNIT_MASK | TARGET_FLAG_CORPSE_MASK))
+            use.mode = GuideUse::Mode::Unit;
+        else if (nearbyObject)
+            use.mode = GuideUse::Mode::NearbyObject;
+        else if (nearbyUnit)
+            use.mode = GuideUse::Mode::NearbyUnit;
+        else if (mask & TARGET_FLAG_DEST_LOCATION)
+            use.mode = GuideUse::Mode::Dest;
+        _uses[item] = use;
+        itemBySpell[use.spell] = item;
+    }
+
+    // Creatures a C++ script makes an item's spell work on (what the data can't tell): Triage's injured soldiers
+    if (auto triage = _uses.find(16991); triage != _uses.end())  // Triage Bandage
+        triage->second.units.insert(triage->second.units.end(), {12923, 12924, 12925, 12936, 12937, 12938});
 
     // Creatures scripted to answer the spell hitting them (SMART_EVENT_SPELLHIT): what it is meant for.
     for (auto const& [entry, creatureTemplate] : *sObjectMgr->GetCreatureTemplates())
@@ -523,7 +664,7 @@ void GuideMgr::LoadUses()
                     _uses[item->second].units.push_back(entry);
     }
 
-    uint32 counts[8] = {};
+    uint32 counts[10] = {};
     uint32 lowHealth = 0;
     uint32 corpses = 0;
     for (auto const& [item, use] : _uses)
@@ -534,15 +675,15 @@ void GuideMgr::LoadUses()
     }
     LOG_INFO("server.loading",
              ">> Guide strategy: {} items to use (equip {}, spell focus {}, object {}, nearby object {}, creature {}, "
-             "nearby creature {}, spot {}, self {}; {} at low health, {} on corpses)",
+             "nearby creature {}, spot {}, self {}, open {}, trap {}; {} at low health, {} on corpses)",
              _uses.size(), counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], counts[7],
-             lowHealth, corpses);
+             counts[8], counts[9], lowHealth, corpses);
 }
 
 void GuideMgr::LoadSpawns()
 {
-    // The creatures the route names: quest givers and enders, objective creatures, ".target" and ".mob"; and the
-    // objective objects (a grave to use), next to the objects holding quest items.
+    // The creatures the route names: quest givers and enders, objective creatures, ".target", ".mob" and gossip NPCs;
+    // and the objective objects (a grave to use), next to the objects holding quest items.
     std::unordered_set<uint32> entries;
     std::unordered_set<uint32> objects;
     auto add = [&](std::vector<uint32> const& list) { entries.insert(list.begin(), list.end()); };
@@ -556,6 +697,16 @@ void GuideMgr::LoadSpawns()
                     add(GetQuestEnders(element.id));
                 else if (element.type == GuideElementType::Target || element.type == GuideElementType::Mob)
                     add(element.entries);
+                else if (element.type == GuideElementType::Gossip)
+                {
+                    std::vector<uint32> creatures;
+                    std::vector<uint32> gossipObjects;
+                    GossipTargets(nullptr, step, element, creatures, gossipObjects);
+                    add(creatures);
+                    for (uint32 object : gossipObjects)
+                        if (!_objectSpawns.count(object))
+                            objects.insert(object);
+                }
                 else if (element.type == GuideElementType::Use)
                 {
                     if (GuideUse const* use = GetUse(element.id))
@@ -563,6 +714,13 @@ void GuideMgr::LoadSpawns()
                 }
                 else if (element.type == GuideElementType::Complete)
                 {
+                    for (GuideGossipCredit const& credit : GetGossipCredits(element.id))
+                        if (!credit.object)
+                            entries.insert(credit.entry);
+                        else if (!_objectSpawns.count(credit.entry))
+                            objects.insert(credit.entry);
+                    if (GetQuestEmote(element.id) || HasScriptedGiver(element.id))
+                        add(GetQuestStarters(element.id));
                     if (Quest const* quest = sObjectMgr->GetQuestTemplate(element.id))
                     {
                         for (int32 objective : quest->RequiredNpcOrGo)
@@ -677,6 +835,38 @@ void GuideMgr::LoadItemDroppers()
             if (items.count(fields[1].Get<uint32>()))
                 _itemVendors[fields[1].Get<uint32>()].push_back(fields[0].Get<uint32>());
         } while (result->NextRow());
+
+    // And the chests that hold them (Power Crystals, a Hippogryph Egg), next to gameobject_questitem's objects. Not the
+    // world's treasure chests (Battered Chest, Solid Chest: hundreds of items, a Minor Mana Potion at 25%, rarely
+    // spawned where they can): a quest drop, half the time or more, or one of a small loot table's.
+    std::unordered_map<uint32, std::vector<uint32>> chestLoot;  // loot id -> the route's items in it
+    if (QueryResult result = WorldDatabase.Query(
+            "SELECT l.Entry, l.Item FROM gameobject_loot_template l JOIN (SELECT Entry, COUNT(*) AS n FROM "
+            "gameobject_loot_template GROUP BY Entry) t ON t.Entry = l.Entry WHERE l.Reference = 0 AND "
+            "(l.QuestRequired = 1 OR l.Chance >= 50 OR (t.n <= 20 AND (l.Chance >= 5 OR (l.Chance = 0 AND "
+            "l.GroupId > 0))))"))
+        do
+        {
+            Field* fields = result->Fetch();
+            if (items.count(fields[1].Get<uint32>()))
+                chestLoot[fields[0].Get<uint32>()].push_back(fields[1].Get<uint32>());
+        } while (result->NextRow());
+    std::unordered_set<uint32> chests;
+    for (auto const& [entry, object] : *sObjectMgr->GetGameObjectTemplates())
+        if (auto loot = chestLoot.find(object.GetLootId());
+            object.type == GAMEOBJECT_TYPE_CHEST && loot != chestLoot.end())
+            for (uint32 item : loot->second)
+            {
+                std::vector<uint32>& objects = _itemObjects[item];
+                if (std::find(objects.begin(), objects.end(), entry) != objects.end())
+                    continue;
+                objects.push_back(entry);
+                if (!_objectSpawns.count(entry))
+                    chests.insert(entry);
+            }
+    for (auto const& [spawnId, data] : sObjectMgr->GetAllGOData())
+        if (chests.count(data.id))
+            _objectSpawns[data.id].push_back({data.mapid, data.posX, data.posY, data.posZ});
 }
 
 std::vector<uint32> const& GuideMgr::GetItemVendors(uint32 item) const
@@ -707,8 +897,8 @@ void GuideMgr::LoadCreatureIndexes()
     _serviceCells.clear();
     FactionTemplateEntry const* alliance = sFactionTemplateStore.LookupEntry(ALLIANCE_PLAYERS);
     FactionTemplateEntry const* horde = sFactionTemplateStore.LookupEntry(HORDE_PLAYERS);
-    uint32 const services =
-        UNIT_NPC_FLAG_VENDOR | UNIT_NPC_FLAG_INNKEEPER | UNIT_NPC_FLAG_FLIGHTMASTER | UNIT_NPC_FLAG_TRAINER;
+    uint32 const services = UNIT_NPC_FLAG_VENDOR | UNIT_NPC_FLAG_REPAIR | UNIT_NPC_FLAG_INNKEEPER |
+                            UNIT_NPC_FLAG_FLIGHTMASTER | UNIT_NPC_FLAG_TRAINER;
     uint32 enemies = 0;
     uint32 servers = 0;
     for (auto const& [spawnId, data] : sObjectMgr->GetAllCreatureData())
@@ -771,6 +961,203 @@ std::vector<std::pair<uint32, GuideSpawn>> GuideMgr::ServicesNear(uint32 mapId, 
     return found;
 }
 
+void GuideMgr::LoadGossipCredits()
+{
+    // What gives quests their events on the realm. SmartAI rows that credit a quest (or a kill, or give an item), a
+    // linked row followed back to the row that starts its chain: when that is "on gossip option selected", the option
+    // (its NPC or object, menu and option) does the quest's work. Any other start (a spell hitting, a waypoint, an
+    // action list) still counts as the quest being credited somehow. Also event / spell / waypoint scripts that mark
+    // a quest explored, and spells that complete one.
+    _gossipQuests.clear();
+    _gossipKills.clear();
+    _gossipItems.clear();
+    _eventCredited.clear();
+    _scriptedGivers.clear();
+    LoadScriptedGivers();
+
+    struct Row
+    {
+        int32 entryOrGuid;
+        uint8 source;
+        uint32 id;
+        uint32 link;
+        uint32 event;
+        uint32 eventParam1;
+        uint32 eventParam2;
+        uint32 action;
+        uint32 actionParam1;
+    };
+    std::vector<Row> rows;
+    std::map<std::tuple<int32, uint8, uint32>, size_t> linkedFrom;  // (entryorguid, source, linked id) -> the row
+    if (QueryResult result = WorldDatabase.Query(
+            "SELECT entryorguid, source_type, id, link, event_type, event_param1, event_param2, action_type, "
+            "action_param1 FROM smart_scripts"))
+        do
+        {
+            Field* fields = result->Fetch();
+            Row row{fields[0].Get<int32>(),  fields[1].Get<uint8>(),  fields[2].Get<uint32>(),
+                    fields[3].Get<uint32>(), fields[4].Get<uint32>(), fields[5].Get<uint32>(),
+                    fields[6].Get<uint32>(), fields[7].Get<uint32>(), fields[8].Get<uint32>()};
+            if (row.link)
+                linkedFrom[{row.entryOrGuid, row.source, row.link}] = rows.size();
+            rows.push_back(row);
+        } while (result->NextRow());
+
+    for (Row const& row : rows)
+    {
+        bool questCredit = row.action == SMART_ACTION_CALL_AREAEXPLOREDOREVENTHAPPENS ||
+                           row.action == SMART_ACTION_CALL_GROUPEVENTHAPPENS;
+        if (!row.actionParam1 ||
+            (!questCredit && row.action != SMART_ACTION_CALL_KILLEDMONSTER && row.action != SMART_ACTION_ADD_ITEM))
+            continue;
+        if (questCredit)
+            _eventCredited.insert(row.actionParam1);
+        Row const* start = &row;
+        for (uint32 hops = 0; start->event == SMART_EVENT_LINK && hops < 10; ++hops)
+        {
+            auto from = linkedFrom.find({start->entryOrGuid, start->source, start->id});
+            if (from == linkedFrom.end())
+                break;
+            start = &rows[from->second];
+        }
+        if (start->event != SMART_EVENT_GOSSIP_SELECT ||
+            (row.source != SMART_SCRIPT_TYPE_CREATURE && row.source != SMART_SCRIPT_TYPE_GAMEOBJECT))
+            continue;
+        bool object = row.source == SMART_SCRIPT_TYPE_GAMEOBJECT;
+        uint32 entry = 0;
+        if (row.entryOrGuid > 0)
+            entry = static_cast<uint32>(row.entryOrGuid);
+        else if (object)
+        {
+            if (GameObjectData const* data = sObjectMgr->GetGameObjectData(static_cast<uint32>(-row.entryOrGuid)))
+                entry = data->id;
+        }
+        else if (CreatureData const* data = sObjectMgr->GetCreatureData(static_cast<uint32>(-row.entryOrGuid)))
+            entry = data->id;
+        if (!entry)
+            continue;
+        auto& credits = row.action == SMART_ACTION_CALL_KILLEDMONSTER ? _gossipKills
+                        : row.action == SMART_ACTION_ADD_ITEM         ? _gossipItems
+                                                                      : _gossipQuests;
+        credits[row.actionParam1].push_back({entry, object, start->eventParam1, start->eventParam2});
+    }
+
+    for (char const* table : {"event_scripts", "spell_scripts", "waypoint_scripts"})
+        if (QueryResult result =
+                WorldDatabase.Query("SELECT datalong FROM {} WHERE command = {}", table, SCRIPT_COMMAND_QUEST_EXPLORED))
+            do
+                _eventCredited.insert(result->Fetch()[0].Get<uint32>());
+            while (result->NextRow());
+    for (uint32 spellId = 0; spellId < sSpellMgr->GetSpellInfoStoreSize(); ++spellId)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
+            for (SpellEffectInfo const& effect : spellInfo->Effects)
+                if (effect.Effect == SPELL_EFFECT_QUEST_COMPLETE && effect.MiscValue > 0)
+                    _eventCredited.insert(static_cast<uint32>(effect.MiscValue));
+}
+
+void GuideMgr::LoadScriptedGivers()
+{
+    // Quest givers with a script for the quest being taken: SmartAI "on quest accepted" (an escort's path, a fight,
+    // attackers summoned), or a C++ script (escorts written in C++)
+    std::unordered_set<uint32> smartAccept;
+    std::unordered_set<uint64> smartAcceptQuest;
+    if (QueryResult result = WorldDatabase.Query(
+            "SELECT entryorguid, event_param1 FROM smart_scripts WHERE source_type = {} AND event_type = {}",
+            SMART_SCRIPT_TYPE_CREATURE, SMART_EVENT_ACCEPTED_QUEST))
+        do
+        {
+            Field* fields = result->Fetch();
+            int32 entryOrGuid = fields[0].Get<int32>();
+            uint32 entry = entryOrGuid > 0 ? static_cast<uint32>(entryOrGuid) : 0;
+            if (!entry)
+                if (CreatureData const* data = sObjectMgr->GetCreatureData(static_cast<uint32>(-entryOrGuid)))
+                    entry = data->id;
+            if (!fields[1].Get<uint32>())
+                smartAccept.insert(entry);
+            else
+                smartAcceptQuest.insert((uint64(entry) << 32) | fields[1].Get<uint32>());
+        } while (result->NextRow());
+    for (auto const& [questId, givers] : _questStarters)
+        for (uint32 entry : givers)
+        {
+            CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry);
+            if (creature && (creature->ScriptID || smartAccept.count(entry) ||
+                             smartAcceptQuest.count((uint64(entry) << 32) | questId)))
+                _scriptedGivers.insert(questId);
+        }
+}
+
+std::vector<GuideGossipCredit> const& GuideMgr::GetGossipCredits(uint32 questId) const
+{
+    static std::vector<GuideGossipCredit> const NO_CREDITS;
+    auto it = _gossipQuests.find(questId);
+    return it != _gossipQuests.end() ? it->second : NO_CREDITS;
+}
+
+uint32 GuideMgr::GetQuestEmote(uint32 questId) const
+{
+    // C++ scripts answering a text emote: what they need can't be read from the data
+    static std::unordered_map<uint32, uint32> const EMOTES = {{2460, TEXT_EMOTE_SALUTE}};  // The Shattered Salute
+    auto it = EMOTES.find(questId);
+    return it != EMOTES.end() ? it->second : 0;
+}
+
+bool GuideMgr::CanCompleteEvent(uint32 questId) const
+{
+    return !GetQuestTriggers(questId).empty() || GetQuestUseItem(questId) || !GetGossipCredits(questId).empty() ||
+           GetQuestEmote(questId) || HasScriptedGiver(questId) || _eventCredited.count(questId);
+}
+
+void GuideMgr::GossipTargets(Player* bot, GuideStep const& step, GuideElement const& element,
+                             std::vector<uint32>& creatures, std::vector<uint32>& objects) const
+{
+    if (element.id)
+    {
+        creatures.push_back(element.id);
+        return;
+    }
+    for (GuideElement const& other : step.elements)
+        if (other.type == GuideElementType::Target && (!bot || GuideRules::Applies(bot, other)))
+            creatures.insert(creatures.end(), other.entries.begin(), other.entries.end());
+    if (!creatures.empty())
+        return;
+
+    auto add = [&](std::unordered_map<uint32, std::vector<GuideGossipCredit>> const& credits, uint32 key)
+    {
+        if (auto found = credits.find(key); key && found != credits.end())
+            for (GuideGossipCredit const& credit : found->second)
+                (credit.object ? objects : creatures).push_back(credit.entry);
+    };
+    for (GuideElement const& other : step.elements)
+    {
+        if (bot && !GuideRules::Applies(bot, other))
+            continue;
+        if (other.type == GuideElementType::Collect)
+            add(_gossipItems, other.id);
+        if (other.type != GuideElementType::Complete)
+            continue;
+        add(_gossipQuests, other.id);
+        if (Quest const* quest = sObjectMgr->GetQuestTemplate(other.id))
+        {
+            for (int32 objective : quest->RequiredNpcOrGo)
+                if (objective > 0)
+                    add(_gossipKills, static_cast<uint32>(objective));
+            for (uint32 item : quest->RequiredItemId)
+                add(_gossipItems, item);
+        }
+    }
+}
+
+std::vector<std::pair<uint32, GuideSpawn>> GuideMgr::RepairersNear(uint32 mapId, float x, float y, float radius) const
+{
+    std::vector<std::pair<uint32, GuideSpawn>> found;
+    for (auto const& [entry, spawn] : ServicesNear(mapId, x, y, radius))
+        if (CreatureTemplate const* creature = sObjectMgr->GetCreatureTemplate(entry))
+            if (creature->npcflag & UNIT_NPC_FLAG_REPAIR)
+                found.push_back({entry, spawn});
+    return found;
+}
+
 Guide const* GuideMgr::GetGuide(std::string const& name) const
 {
     auto guide = _guides.find(name);
@@ -785,11 +1172,18 @@ Guide const* GuideMgr::GetStartGuide(Player* player) const
 
 Guide const* GuideMgr::GetNextGuide(Player* player, Guide const& guide) const
 {
-    for (std::string const& name : guide.next)
-        if (Guide const* next = GetGuide(name))
-            if (next->condition.Holds(player))
-                return next;
-    return nullptr;
+    // The first listed that is for the character; none: the last listed anyway, as RestedXP does (its Alliance
+    // Hunters go on from 21-23 Ashenvale/Stonetalon to the non-Hunter 23-24 Wetlands that way)
+    Guide const* last = nullptr;
+    for (GuideNext const& candidate : guide.next)
+        if (candidate.condition.Holds(player))
+            if (Guide const* next = GetGuide(candidate.name))
+            {
+                if (next->condition.Holds(player))
+                    return next;
+                last = next;
+            }
+    return last;
 }
 
 std::vector<uint32> const& GuideMgr::GetQuestStarters(uint32 questId) const

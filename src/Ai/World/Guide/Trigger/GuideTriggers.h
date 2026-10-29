@@ -48,6 +48,14 @@ private:
 };
 
 // In combat: the victim is one a "use at low health" item is for, at or below the mark, and the item is ready.
+class GuideLureTrigger : public Trigger
+{
+public:
+    GuideLureTrigger(PlayerbotAI* botAI) : Trigger(botAI, "guide lure") {}
+
+    bool IsActive() override;
+};
+
 class GuideUseNowTrigger : public Trigger
 {
 public:

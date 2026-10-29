@@ -52,6 +52,17 @@ bool GuideDeathTrigger::IsActive()
     return _ghost ? ghost && bot->GetCorpse() : !ghost;
 }
 
+bool GuideLureTrigger::IsActive()
+{
+    // A trap placed, its creature after the bot, and the bot off the trap
+    GuideInfo const& info = botAI->guideInfo;
+    if (!info.active || info.lureTrap == WorldPosition() || !IsSelfBot(bot) ||
+        bot->GetMapId() != info.lureTrap.GetMapId())
+        return false;
+    Unit* prey = ObjectAccessor::GetUnit(*bot, info.lurePrey);
+    return prey && prey->IsAlive() && prey->GetVictim() == bot && bot->GetExactDist2d(info.lureTrap) > 0.5f;
+}
+
 bool GuideUseNowTrigger::IsActive()
 {
     GuideInfo const& info = botAI->guideInfo;

@@ -290,6 +290,7 @@ public:
         creators["guide open"] = &ActionContext::guide_open;
         creators["guide use"] = &ActionContext::guide_use;
         creators["guide use now"] = &ActionContext::guide_use_now;
+        creators["guide lure"] = &ActionContext::guide_lure;
         creators["guide release"] = &ActionContext::guide_release;
         creators["guide corpse run"] = &ActionContext::guide_corpse_run;
         creators["guide attack"] = &ActionContext::guide_attack;
@@ -509,6 +510,7 @@ private:
     static Action* guide_open(PlayerbotAI* botAI) { return new GuideOpenAction(botAI); }
     static Action* guide_use(PlayerbotAI* botAI) { return new GuideUseAction(botAI); }
     static Action* guide_use_now(PlayerbotAI* botAI) { return new GuideUseNowAction(botAI); }
+    static Action* guide_lure(PlayerbotAI* botAI) { return new GuideLureAction(botAI); }
     static Action* guide_release(PlayerbotAI* botAI) { return new GuideReleaseAction(botAI); }
     static Action* guide_corpse_run(PlayerbotAI* botAI) { return new GuideCorpseRunAction(botAI); }
     static Action* guide_attack(PlayerbotAI* botAI) { return new GuideAttackAction(botAI); }

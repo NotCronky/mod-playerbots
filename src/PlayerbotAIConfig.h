@@ -395,6 +395,7 @@ public:
     bool AutoDoQuests;
     bool EnableNewRpgStrategy;
     std::string GuideDataFile;
+    std::string GuideRoadFile;
     bool SafePull;
     std::unordered_map<NewRpgStatus, uint32> RpgStatusProbWeight;
     bool SyncLevelWithPlayers;
