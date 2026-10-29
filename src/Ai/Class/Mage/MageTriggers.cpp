@@ -7,11 +7,13 @@
 #include "MageTriggers.h"
 #include "DynamicObject.h"
 #include "Player.h"
+#include "PlayerbotAIConfig.h"
 #include "PlayerbotEra.h"
 #include "Playerbots.h"
 #include "ServerFacade.h"
 #include "Spell.h"
 #include "SpellAuraEffects.h"
+#include "TargetValue.h"
 #include "Value.h"
 
 bool NoManaGemTrigger::IsActive()
@@ -197,8 +199,7 @@ bool BlizzardChannelCheckTrigger::IsActive()
     if (Spell* spell = bot->GetCurrentSpell(CURRENT_CHANNELED_SPELL);
         spell && BLIZZARD_SPELL_IDS.count(spell->m_spellInfo->Id))
     {
-        uint8 attackerCount = AI_VALUE(uint8, "attacker count");
-        return attackerCount < minEnemies;
+        return !HasEnoughAoeTargets(botAI, bot->GetPosition(), sPlayerbotAIConfig.SightDistance, minEnemies);
     }
 
     return false;

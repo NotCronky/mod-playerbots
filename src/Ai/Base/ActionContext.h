@@ -45,6 +45,7 @@
 #include "MoveToTravelTargetAction.h"
 #include "MovementActions.h"
 #include "NewRpgAction.h"
+#include "NewRpgDoGather.h"
 #include "NewRpgOutdoorPvP.h"
 #include "NonCombatActions.h"
 #include "OutfitAction.h"
@@ -294,6 +295,7 @@ public:
         creators["guide release"] = &ActionContext::guide_release;
         creators["guide corpse run"] = &ActionContext::guide_corpse_run;
         creators["guide attack"] = &ActionContext::guide_attack;
+        creators["new rpg do gather"] = &ActionContext::new_rpg_do_gather;
         creators["wait for attack keep safe distance"] = &ActionContext::wait_for_attack_keep_safe_distance;
     }
 
@@ -514,6 +516,7 @@ private:
     static Action* guide_release(PlayerbotAI* botAI) { return new GuideReleaseAction(botAI); }
     static Action* guide_corpse_run(PlayerbotAI* botAI) { return new GuideCorpseRunAction(botAI); }
     static Action* guide_attack(PlayerbotAI* botAI) { return new GuideAttackAction(botAI); }
+    static Action* new_rpg_do_gather(PlayerbotAI* botAI) { return new NewRpgDoGatherAction(botAI); }
     static Action* wait_for_attack_keep_safe_distance(PlayerbotAI* botAI) { return new WaitForAttackKeepSafeDistanceAction(botAI); }
 };
 
