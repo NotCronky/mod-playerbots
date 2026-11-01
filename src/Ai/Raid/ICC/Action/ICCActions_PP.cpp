@@ -1602,7 +1602,8 @@ bool IccPutricideAbominationAction::Execute(Event /*event*/)
 
     if (!piloting)
     {
-        if (boss->HealthBelowPct(35))
+        // First living assist tank only: two drinking on the same tick both pass the piloting check.
+        if (!PlayerbotAI::IsAssistTankOfIndex(bot, 0, true) || boss->HealthBelowPct(35))
             return false;
         if (IsSomeoneAlreadyPiloting())
             return false;

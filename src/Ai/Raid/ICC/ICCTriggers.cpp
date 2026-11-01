@@ -472,7 +472,8 @@ bool IccBpcKelesethTankTrigger::IsActive()
 
     IccStripExperienced(bot);
 
-    if (!PlayerbotAI::IsAssistTank(bot))
+    // One tank only: a second one taunts Keleseth away and splits the Dark Nuclei between them.
+    if (!PlayerbotAI::IsAssistTankOfIndex(bot, 0, true))
         return false;
 
     Aura* aura = botAI->GetAura("Shadow Prison", bot, false, true);

@@ -22,6 +22,7 @@
 #include "PetsAction.h"
 #include "PlayerbotAI.h"
 #include "PriestActions.h"
+#include "RaidActionFilters.h"
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
@@ -279,13 +280,14 @@ float IccRotfaceMultiplier::GetValue(Action* action)
     if (dynamic_cast<CastBlinkBackAction*>(action) || dynamic_cast<CastArmyOfTheDeadAction*>(action))
         return 0.0f;
 
-    if (PlayerbotAI::IsAssistTank(bot) &&
+    // Only the Big Ooze tank; a spare assist tank plays as an ordinary tank until that one dies.
+    if (PlayerbotAI::IsAssistTankOfIndex(bot, 0, true) &&
         (dynamic_cast<AttackRtiTargetAction*>(action) || dynamic_cast<TankAssistAction*>(action) ||
          dynamic_cast<CastTauntAction*>(action) || dynamic_cast<CastDarkCommandAction*>(action) ||
          dynamic_cast<CastHandOfReckoningAction*>(action) || dynamic_cast<CastGrowlAction*>(action)))
         return 0.0f;
 
-    if (PlayerbotAI::IsAssistTank(bot) && boss1 && bot->GetVictim() == boss1)
+    if (PlayerbotAI::IsAssistTankOfIndex(bot, 0, true) && boss1 && bot->GetVictim() == boss1)
     {
         bot->AttackStop();
         bot->SetTarget(ObjectGuid::Empty);
@@ -461,8 +463,16 @@ float IccBpcAssistMultiplier::GetValue(Action* action)
         dynamic_cast<CastArmyOfTheDeadAction*>(action)))
         return 0.0f;
 
-    if (PlayerbotAI::IsTank(bot) &&
-        (dynamic_cast<AttackRtiTargetAction*>(action) || dynamic_cast<TankAssistAction*>(action)))
+    // A direct hit moves a Dark Nucleus to its attacker. The Keleseth tank gains them by splash; on anyone else
+    // it strips the tank's Shadow Resonance, and an Empowered Shadow Lance then kills in one hit.
+    if (IsRaidSplashAction(action) && !PlayerbotAI::IsAssistTankOfIndex(bot, 0, true))
+        return 0.0f;
+
+    // The spare assist tank follows the skull until the Keleseth tank dies, then the trigger hands it Keleseth.
+    bool const isTargetAction =
+        dynamic_cast<AttackRtiTargetAction*>(action) || dynamic_cast<TankAssistAction*>(action);
+    if (isTargetAction && PlayerbotAI::IsTank(bot) &&
+        (!PlayerbotAI::IsAssistTank(bot) || PlayerbotAI::IsAssistTankOfIndex(bot, 0, true)))
     {
         if (Group* group = bot->GetGroup())
         {
@@ -1086,7 +1096,8 @@ float IccLichKingAddsMultiplier::GetValue(Action* action)
              dynamic_cast<DpsAssistAction*>(action)))
             return 0.0f;
 
-        if (!PlayerbotAI::IsTank(bot) && dynamic_cast<CastConsecrationAction*>(action))
+        if (!PlayerbotAI::IsTank(bot) && (dynamic_cast<CastConsecrationAction*>(action) ||
+            IsRaidSplashAction(action)))
             return 0.0f;
 
         if (dynamic_cast<DpsAoeAction*>(action) || dynamic_cast<CastHurricaneAction*>(action) ||

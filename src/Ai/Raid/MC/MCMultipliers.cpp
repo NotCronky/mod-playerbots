@@ -16,6 +16,7 @@
 #include "MovementActions.h"
 #include "PaladinActions.h"
 #include "Playerbots.h"
+#include "RaidActionFilters.h"
 #include "ReachTargetActions.h"
 #include "ShamanActions.h"
 #include "SpellAuras.h"
@@ -30,14 +31,8 @@ static bool IsDpsBotWithAoeAction(Player* bot, Action* action)
         if (dynamic_cast<DpsAoeAction*>(action) || dynamic_cast<CastConsecrationAction*>(action) ||
             dynamic_cast<CastStarfallAction*>(action) || dynamic_cast<CastWhirlwindAction*>(action) ||
             dynamic_cast<CastMagmaTotemAction*>(action) || dynamic_cast<CastExplosiveTrapAction*>(action) ||
-            dynamic_cast<CastDeathAndDecayAction*>(action))
+            dynamic_cast<CastDeathAndDecayAction*>(action) || IsRaidSplashAction(action))
             return true;
-
-        if (auto castSpellAction = dynamic_cast<CastSpellAction*>(action))
-        {
-            if (castSpellAction->getThreatType() == Action::ActionThreatType::Aoe)
-                return true;
-        }
     }
     return false;
 }

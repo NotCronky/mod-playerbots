@@ -57,7 +57,8 @@ bool IccRotfaceTankPositionAction::Execute(Event /*event*/)
         return PositionMainTankAndMelee(boss, smallOoze);
     }
 
-    if (PlayerbotAI::IsAssistTank(bot))
+    // One tank only: this taunts every Big Ooze it does not hold, so two tanks would swap it endlessly.
+    if (PlayerbotAI::IsAssistTankOfIndex(bot, 0, true))
         return HandleAssistTankPositioning(boss);
 
     return false;

@@ -25,6 +25,7 @@
 #include "RSActions.h"
 #include "RSScripts.h"
 #include "RSTriggers.h"
+#include "RaidActionFilters.h"
 #include "ReachTargetActions.h"
 #include "RogueActions.h"
 #include "ShamanActions.h"
@@ -41,7 +42,7 @@ namespace
                dynamic_cast<CastVolleyAction*>(action) || dynamic_cast<CastBlizzardAction*>(action) ||
                dynamic_cast<CastStarfallAction*>(action) || dynamic_cast<FanOfKnivesAction*>(action) ||
                dynamic_cast<CastWhirlwindAction*>(action) || dynamic_cast<CastMindSearAction*>(action) ||
-               dynamic_cast<CastArmyOfTheDeadAction*>(action);
+               dynamic_cast<CastArmyOfTheDeadAction*>(action) || IsRaidSplashAction(action);
     }
 }
 

@@ -552,7 +552,8 @@ bool RsBaltharusTankPositionAction::Execute(Event )
         return HoldAt(RS_BALTHARUS_TANK_POSITION, boss);
     }
 
-    if (PlayerbotAI::IsAssistTank(bot))
+    // One tank only: this branch taunts every clone it does not hold, so two would swap them endlessly.
+    if (bot == assistTankPlayer)
     {
         if (clones.empty())
             return false;

@@ -1554,8 +1554,8 @@ bool IccLichKingWinterAction::HandleAssistTankAddManagement(Unit*, Position cons
 
         Unit* victim = add->GetVictim();
 
-        // Skip adds already securely held by the main tank
-        if (mainTank && victim && victim->GetGUID() == mainTank->GetGUID())
+        // Skip adds already held by another tank: assist tanks would otherwise taunt them off each other
+        if (victim && victim != bot && victim->IsPlayer() && PlayerbotAI::IsTank(victim->ToPlayer()))
             continue;
 
         if (victim == bot)
@@ -2751,9 +2751,10 @@ bool IccLichKingAddsAction::HandleAssistTankAddManagement(Unit* boss, Difficulty
         if (!IsLkCollectibleAdd(unit))
             continue;
 
-        if (unit->GetVictim() == bot)
+        Unit* victim = unit->GetVictim();
+        if (victim == bot)
             addsOnUs.push_back(unit);
-        else
+        else if (!victim || !victim->IsPlayer() || !PlayerbotAI::IsAssistTank(victim->ToPlayer()))
             addsElsewhere.push_back(unit);
     }
 
